@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Search, Star, ChevronRight, Shield, Clock, Globe, Sparkles, Check, ArrowRight, Play, Users, TrendingUp, Award, Zap } from 'lucide-react';
 
 function AnimatedCounter({ value, suffix = '', prefix = '' }: { value: number; suffix?: string; prefix?: string }) {
@@ -38,6 +39,7 @@ function LiveActivity() {
 }
 
 export default function LandingPage() {
+  const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -50,6 +52,15 @@ export default function LandingPage() {
 
   const suggestions = ['Tokyo, Japan', 'Paris, France', 'Bali, Indonesia', 'New York, USA', 'Barcelona, Spain'];
   const filteredSuggestions = suggestions.filter(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  const handleSearch = (destination?: string) => {
+    const query = destination || searchQuery;
+    if (query) {
+      router.push(`/create?destination=${encodeURIComponent(query.split(',')[0])}`);
+    } else {
+      router.push('/create');
+    }
+  };
 
   const destinations = [
     { name: 'Tokyo', country: 'Japan', image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&q=80', price: 89, rating: 4.97, reviews: 2847, badge: 'Trending' },
@@ -83,9 +94,9 @@ export default function LandingPage() {
               <button className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${isScrolled ? 'text-gray-600 hover:text-gray-900' : 'text-white/90 hover:text-white'}`}>
                 Log in
               </button>
-              <button className="bg-primary hover:bg-primary-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all hover:-translate-y-0.5">
+              <Link href="/create" className="bg-primary hover:bg-primary-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all hover:-translate-y-0.5">
                 Get Started Free
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -138,7 +149,7 @@ export default function LandingPage() {
                   {showSuggestions && searchQuery && (
                     <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-10">
                       {filteredSuggestions.map((s, i) => (
-                        <button key={i} className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors">
+                        <button key={i} onClick={() => handleSearch(s)} className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors">
                           <Globe className="w-5 h-5 text-gray-400" />
                           <span className="text-gray-900">{s}</span>
                         </button>
@@ -146,7 +157,10 @@ export default function LandingPage() {
                     </div>
                   )}
                 </div>
-                <button className="bg-gradient-to-r from-primary to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white px-8 py-4 rounded-xl font-semibold flex items-center gap-2 transition-all shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30">
+                <button 
+                  onClick={() => handleSearch()}
+                  className="bg-gradient-to-r from-primary to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white px-8 py-4 rounded-xl font-semibold flex items-center gap-2 transition-all shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30"
+                >
                   <Sparkles className="w-5 h-5" />
                   <span>Create Itinerary</span>
                 </button>
@@ -156,7 +170,7 @@ export default function LandingPage() {
               <div className="flex flex-wrap gap-2 mt-4">
                 <span className="text-white/60 text-sm">Popular:</span>
                 {['Tokyo', 'Paris', 'Bali', 'NYC'].map((place) => (
-                  <button key={place} onClick={() => setSearchQuery(place)} className="text-white/80 hover:text-white text-sm bg-white/10 hover:bg-white/20 px-3 py-1 rounded-full transition-colors">
+                  <button key={place} onClick={() => handleSearch(place)} className="text-white/80 hover:text-white text-sm bg-white/10 hover:bg-white/20 px-3 py-1 rounded-full transition-colors">
                     {place}
                   </button>
                 ))}
@@ -268,10 +282,10 @@ export default function LandingPage() {
           </div>
 
           <div className="text-center mt-12">
-            <button className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-4 rounded-full font-semibold inline-flex items-center gap-2 shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5">
+            <Link href="/create" className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-4 rounded-full font-semibold inline-flex items-center gap-2 shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5">
               Try It Now — It's Free
               <ArrowRight className="w-5 h-5" />
-            </button>
+            </Link>
           </div>
         </div>
       </section>
@@ -315,7 +329,7 @@ export default function LandingPage() {
                     <span className="text-gray-900 font-semibold">${dest.price}</span>
                     <span className="text-gray-500 text-sm"> / night avg.</span>
                   </div>
-                  <button className="text-primary font-medium text-sm hover:underline">Plan trip →</button>
+                  <Link href={`/create?destination=${encodeURIComponent(dest.name)}`} className="text-primary font-medium text-sm hover:underline">Plan trip →</Link>
                 </div>
               </div>
             ))}
@@ -342,10 +356,10 @@ export default function LandingPage() {
               Join 50,000+ travelers who save hours of planning with TripGenie's AI-powered itineraries.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="bg-primary hover:bg-primary-600 text-white px-8 py-4 rounded-full font-semibold text-lg inline-flex items-center justify-center gap-2 shadow-lg shadow-primary/25 hover:shadow-xl transition-all hover:-translate-y-0.5">
+              <Link href="/create" className="bg-primary hover:bg-primary-600 text-white px-8 py-4 rounded-full font-semibold text-lg inline-flex items-center justify-center gap-2 shadow-lg shadow-primary/25 hover:shadow-xl transition-all hover:-translate-y-0.5">
                 <Sparkles className="w-5 h-5" />
                 Create Free Itinerary
-              </button>
+              </Link>
               <button className="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-8 py-4 rounded-full font-semibold text-lg inline-flex items-center justify-center gap-2 transition-all">
                 <Play className="w-5 h-5" />
                 Watch Demo
@@ -405,10 +419,20 @@ export default function LandingPage() {
           <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4">Start planning your next adventure</h2>
           <p className="text-gray-500 mb-8">No sign-up required. Get your personalized itinerary in seconds.</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
-            <input type="text" placeholder="Enter destination..." className="flex-1 px-5 py-3 border border-gray-200 rounded-full outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
-            <button className="bg-primary hover:bg-primary-600 text-white px-6 py-3 rounded-full font-semibold whitespace-nowrap shadow-lg shadow-primary/20">
+            <input 
+              type="text" 
+              placeholder="Enter destination..." 
+              className="flex-1 px-5 py-3 border border-gray-200 rounded-full outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" 
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const value = (e.target as HTMLInputElement).value;
+                  router.push(value ? `/create?destination=${encodeURIComponent(value)}` : '/create');
+                }
+              }}
+            />
+            <Link href="/create" className="bg-primary hover:bg-primary-600 text-white px-6 py-3 rounded-full font-semibold whitespace-nowrap shadow-lg shadow-primary/20 text-center">
               Plan My Trip
-            </button>
+            </Link>
           </div>
         </div>
       </section>
