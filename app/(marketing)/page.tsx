@@ -310,11 +310,16 @@ export default function LandingPage() {
                   <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
+                    inputMode="search"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="words"
+                    spellCheck={false}
                     value={destination || searchQuery}
                     onChange={(e) => { setSearchQuery(e.target.value); setDestination(''); }}
                     onFocus={() => setShowDestDropdown(true)}
                     placeholder="Search any city or country..."
-                    className="w-full pl-12 pr-10 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    className="w-full pl-12 pr-10 py-3.5 min-h-[52px] bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-900 placeholder-gray-400 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   />
                   {isSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 animate-spin" />}
                   {(destination || searchQuery) && !isSearching && (
@@ -381,16 +386,16 @@ export default function LandingPage() {
                 </button>
                 
                 {showDatePicker && (
-                  <div className="absolute z-30 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4">
+                  <div className="absolute z-30 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 left-0 right-0 sm:left-auto sm:right-auto max-h-[80vh] overflow-auto">
                     <DayPicker
                       mode="range"
                       selected={dateRange}
                       onSelect={setDateRange}
-                      numberOfMonths={2}
+                      numberOfMonths={1}
                       disabled={{ before: new Date() }}
                       showOutsideDays={false}
                       classNames={{
-                        months: 'flex flex-col sm:flex-row gap-4',
+                        months: 'flex flex-col gap-4',
                         month: 'space-y-4',
                         caption: 'flex justify-center pt-1 relative items-center',
                         caption_label: 'text-sm font-semibold text-gray-900',
@@ -456,11 +461,11 @@ export default function LandingPage() {
                       <p className="text-xs text-gray-500">How many people?</p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <button onClick={() => setTravelers(Math.max(1, travelers - 1))} disabled={travelers <= 1} className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                      <button onClick={() => setTravelers(Math.max(1, travelers - 1))} disabled={travelers <= 1} className="w-11 h-11 rounded-full border border-gray-200 flex items-center justify-center hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                         <Minus className="w-4 h-4" />
                       </button>
                       <span className="w-6 text-center font-semibold text-gray-900">{travelers}</span>
-                      <button onClick={() => setTravelers(Math.min(10, travelers + 1))} disabled={travelers >= 10} className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                      <button onClick={() => setTravelers(Math.min(10, travelers + 1))} disabled={travelers >= 10} className="w-11 h-11 rounded-full border border-gray-200 flex items-center justify-center hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                         <Plus className="w-4 h-4" />
                       </button>
                     </div>

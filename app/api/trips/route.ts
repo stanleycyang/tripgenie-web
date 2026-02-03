@@ -53,33 +53,41 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { destination, start_date, end_date, preferences } = body
+    const { destination, start_date, end_date, travelers, preferences } = body
 
-    // TODO: Validate input and insert into database
-    // const { data: trip, error } = await supabase
-    //   .from('trips')
-    //   .insert({
-    //     user_id: user.id,
-    //     destination,
-    //     start_date,
-    //     end_date,
-    //     preferences,
-    //   })
-    //   .select()
-    //   .single()
+    // Validate required fields
+    if (!destination || !start_date || !end_date) {
+      return NextResponse.json(
+        { error: 'Missing required fields: destination, start_date, end_date' },
+        { status: 400 }
+      )
+    }
 
-    // Placeholder response
-    return NextResponse.json({
-      trip: {
-        id: 'placeholder-id',
+    // Insert trip into database
+    const { data: trip, error } = await supabase
+      .from('trips')
+      .insert({
+        user_id: user.id,
         destination,
         start_date,
         end_date,
-        preferences,
-        user_id: user.id,
-      },
-      message: 'Placeholder: POST /api/trips endpoint'
-    }, { status: 201 })
+        travelers: travelers || 1,
+        traveler_type: preferences?.travelerType,
+        vibes: preferences?.vibes,
+        status: 'draft',
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Database error:', error)
+      return NextResponse.json(
+        { error: 'Failed to create trip' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ trip }, { status: 201 })
   } catch (error) {
     console.error('Error creating trip:', error)
     return NextResponse.json(
