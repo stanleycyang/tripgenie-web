@@ -74,7 +74,7 @@ export async function PATCH(request: NextRequest) {
     const parseResult = UpdateProfileSchema.safeParse(body);
 
     if (!parseResult.success) {
-      return validationErrorResponse('Invalid request body', parseResult.error.errors);
+      return validationErrorResponse('Invalid request body', parseResult.error.issues);
     }
 
     const updates: Record<string, unknown> = {};
