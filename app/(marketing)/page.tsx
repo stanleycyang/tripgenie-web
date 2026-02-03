@@ -1,16 +1,34 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Search, Star, ChevronDown, ChevronUp, Shield, Clock, Globe, Sparkles, Check, ArrowRight, Play, Users, TrendingUp, Award, Zap, Calendar, Minus, Plus, X, Loader2 } from 'lucide-react';
+import { DayPicker, DateRange } from 'react-day-picker';
+import { format, addDays, differenceInDays } from 'date-fns';
+import debounce from 'lodash/debounce';
+import { Search, Star, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Shield, Clock, Globe, Sparkles, Check, ArrowRight, Minus, Plus, X, Loader2, MapPin } from 'lucide-react';
+import 'react-day-picker/dist/style.css';
 
-const destinations = [
-  { id: 'tokyo', name: 'Tokyo', country: 'Japan', image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&q=80', price: 89 },
-  { id: 'paris', name: 'Paris', country: 'France', image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&q=80', price: 120 },
-  { id: 'bali', name: 'Bali', country: 'Indonesia', image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80', price: 45 },
-  { id: 'santorini', name: 'Santorini', country: 'Greece', image: 'https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?w=800&q=80', price: 150 },
+// Extended destinations for autocomplete
+const allDestinations = [
+  { id: 'tokyo', name: 'Tokyo', country: 'Japan', image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&q=80', vibe: 'Culture & Tech', avgBudget: 150 },
+  { id: 'paris', name: 'Paris', country: 'France', image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&q=80', vibe: 'Romance & Art', avgBudget: 180 },
+  { id: 'bali', name: 'Bali', country: 'Indonesia', image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80', vibe: 'Beach & Wellness', avgBudget: 80 },
+  { id: 'santorini', name: 'Santorini', country: 'Greece', image: 'https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?w=800&q=80', vibe: 'Scenic & Romantic', avgBudget: 200 },
+  { id: 'new-york', name: 'New York', country: 'USA', image: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=800&q=80', vibe: 'Urban & Nightlife', avgBudget: 220 },
+  { id: 'barcelona', name: 'Barcelona', country: 'Spain', image: 'https://images.unsplash.com/photo-1583422409516-2895a77efded?w=800&q=80', vibe: 'Beach & Culture', avgBudget: 140 },
+  { id: 'london', name: 'London', country: 'United Kingdom', image: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=800&q=80', vibe: 'History & Culture', avgBudget: 190 },
+  { id: 'rome', name: 'Rome', country: 'Italy', image: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=800&q=80', vibe: 'History & Food', avgBudget: 160 },
+  { id: 'dubai', name: 'Dubai', country: 'UAE', image: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800&q=80', vibe: 'Luxury & Modern', avgBudget: 250 },
+  { id: 'sydney', name: 'Sydney', country: 'Australia', image: 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?w=800&q=80', vibe: 'Beach & Adventure', avgBudget: 170 },
+  { id: 'amsterdam', name: 'Amsterdam', country: 'Netherlands', image: 'https://images.unsplash.com/photo-1534351590666-13e3e96b5017?w=800&q=80', vibe: 'Culture & Canals', avgBudget: 160 },
+  { id: 'kyoto', name: 'Kyoto', country: 'Japan', image: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=800&q=80', vibe: 'Traditional & Zen', avgBudget: 140 },
+  { id: 'maldives', name: 'Maldives', country: 'Maldives', image: 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=800&q=80', vibe: 'Luxury & Beach', avgBudget: 400 },
+  { id: 'iceland', name: 'Reykjavik', country: 'Iceland', image: 'https://images.unsplash.com/photo-1504893524553-b855bce32c67?w=800&q=80', vibe: 'Nature & Adventure', avgBudget: 200 },
+  { id: 'marrakech', name: 'Marrakech', country: 'Morocco', image: 'https://images.unsplash.com/photo-1597212618440-806262de4f6b?w=800&q=80', vibe: 'Exotic & Culture', avgBudget: 90 },
 ];
+
+const trendingDestinations = allDestinations.slice(0, 4);
 
 const travelerTypes = [
   { id: 'solo', label: 'Solo', icon: '🧑' },
@@ -35,8 +53,7 @@ function AnimatedCounter({ value, suffix = '' }: { value: number; suffix?: strin
   useEffect(() => {
     let start = 0;
     const end = value;
-    const duration = 2000;
-    const increment = end / (duration / 16);
+    const increment = end / 125;
     const timer = setInterval(() => {
       start += increment;
       if (start >= end) { setCount(end); clearInterval(timer); }
@@ -61,10 +78,17 @@ export default function LandingPage() {
   
   // Trip creation state
   const [destination, setDestination] = useState('');
+  const [destinationCountry, setDestinationCountry] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<typeof allDestinations>([]);
   const [showDestDropdown, setShowDestDropdown] = useState(false);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  
+  // Date picker state
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  
+  // Advanced options
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [travelers, setTravelers] = useState(2);
   const [travelerType, setTravelerType] = useState('couple');
@@ -77,6 +101,7 @@ export default function LandingPage() {
   const [error, setError] = useState('');
 
   const searchRef = useRef<HTMLDivElement>(null);
+  const dateRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -86,17 +111,45 @@ export default function LandingPage() {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
-        setShowDestDropdown(false);
-      }
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setShowDestDropdown(false);
+      if (dateRef.current && !dateRef.current.contains(e.target as Node)) setShowDatePicker(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filteredDestinations = searchQuery
-    ? destinations.filter(d => d.name.toLowerCase().includes(searchQuery.toLowerCase()) || d.country.toLowerCase().includes(searchQuery.toLowerCase()))
-    : destinations;
+  // Debounced search
+  const debouncedSearch = useCallback(
+    debounce((query: string) => {
+      setIsSearching(true);
+      // Simulate API delay for realistic feel
+      setTimeout(() => {
+        const results = allDestinations.filter(d => 
+          d.name.toLowerCase().includes(query.toLowerCase()) || 
+          d.country.toLowerCase().includes(query.toLowerCase())
+        );
+        setSearchResults(results);
+        setIsSearching(false);
+      }, 150);
+    }, 300),
+    []
+  );
+
+  useEffect(() => {
+    if (searchQuery.length > 0) {
+      debouncedSearch(searchQuery);
+      setShowDestDropdown(true);
+    } else {
+      setSearchResults(allDestinations.slice(0, 6));
+    }
+  }, [searchQuery, debouncedSearch]);
+
+  const selectDestination = (dest: typeof allDestinations[0]) => {
+    setDestination(dest.name);
+    setDestinationCountry(dest.country);
+    setSearchQuery('');
+    setShowDestDropdown(false);
+  };
 
   const toggleVibe = (vibeId: string) => {
     setSelectedVibes(prev => 
@@ -104,13 +157,8 @@ export default function LandingPage() {
     );
   };
 
-  const canGenerate = destination && startDate && endDate;
-
-  const getTripDuration = () => {
-    if (!startDate || !endDate) return null;
-    const days = Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1;
-    return days;
-  };
+  const canGenerate = destination && dateRange?.from && dateRange?.to;
+  const tripDays = dateRange?.from && dateRange?.to ? differenceInDays(dateRange.to, dateRange.from) + 1 : null;
 
   const handleGenerate = async () => {
     if (!canGenerate) return;
@@ -126,44 +174,46 @@ export default function LandingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           destination,
-          startDate,
-          endDate,
+          startDate: format(dateRange!.from!, 'yyyy-MM-dd'),
+          endDate: format(dateRange!.to!, 'yyyy-MM-dd'),
           travelers: { adults: travelers, children: 0 },
           vibes: selectedVibes,
           budget: 'moderate',
-          save: false, // Don't save without auth
+          save: false,
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate itinerary');
+        throw new Error((await response.json()).error || 'Failed to generate');
       }
 
       setGenerationProgress('Creating your personalized itinerary...');
       const itinerary = await response.json();
       setGeneratedItinerary(itinerary);
-      setGenerationProgress('');
     } catch (err) {
-      console.error('Generation error:', err);
-      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
-      // Show mock data for demo if API fails
-      setGenerationProgress('');
+      // Show demo data for now
       setGeneratedItinerary({
         destination,
-        startDate,
-        endDate,
-        overview: `Your ${getTripDuration()}-day adventure in ${destination} awaits! This AI-generated itinerary is tailored to your ${selectedVibes.join(', ')} vibes.`,
-        days: Array.from({ length: getTripDuration() || 3 }, (_, i) => ({
+        startDate: format(dateRange!.from!, 'yyyy-MM-dd'),
+        endDate: format(dateRange!.to!, 'yyyy-MM-dd'),
+        overview: `Your ${tripDays}-day adventure in ${destination} awaits! This itinerary is crafted for your ${selectedVibes.join(', ')} travel style.`,
+        days: Array.from({ length: tripDays || 3 }, (_, i) => ({
           dayNumber: i + 1,
-          title: `Day ${i + 1}: ${i === 0 ? 'Arrival & Exploration' : i === (getTripDuration() || 3) - 1 ? 'Final Adventures' : 'Full Day of Discovery'}`,
-          summary: `Exciting activities planned for day ${i + 1} of your ${destination} trip.`,
+          title: `Day ${i + 1}: ${['Arrival & First Impressions', 'Deep Exploration', 'Hidden Gems', 'Cultural Immersion', 'Adventure Day', 'Local Favorites', 'Final Adventures'][i % 7]}`,
+          summary: `Discover the best of ${destination} with carefully curated activities, local restaurants, and authentic experiences.`,
         })),
         _demo: true,
       });
     } finally {
       setIsGenerating(false);
+      setGenerationProgress('');
     }
+  };
+
+  const formatDateRange = () => {
+    if (!dateRange?.from) return 'Add dates';
+    if (!dateRange.to) return format(dateRange.from, 'MMM d');
+    return `${format(dateRange.from, 'MMM d')} - ${format(dateRange.to, 'MMM d')}`;
   };
 
   return (
@@ -180,7 +230,7 @@ export default function LandingPage() {
             </Link>
             
             <div className="hidden lg:flex items-center gap-1">
-              {['Destinations', 'How It Works', 'Pricing'].map((item) => (
+              {['Destinations', 'How It Works'].map((item) => (
                 <a key={item} href={`#${item.toLowerCase().replace(' ', '-')}`} className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${isScrolled ? 'text-gray-600 hover:text-gray-900 hover:bg-gray-100' : 'text-white/80 hover:text-white hover:bg-white/10'}`}>
                   {item}
                 </a>
@@ -189,13 +239,13 @@ export default function LandingPage() {
             
             <div className="flex items-center gap-2">
               <button className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${isScrolled ? 'text-gray-600 hover:text-gray-900' : 'text-white/90 hover:text-white'}`}>Log in</button>
-              <button className="bg-primary hover:bg-primary-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold shadow-lg shadow-primary/25 hover:shadow-xl transition-all">Sign up free</button>
+              <button className="bg-primary hover:bg-primary-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold shadow-lg shadow-primary/25 transition-all">Sign up free</button>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section with Inline Trip Creator */}
+      {/* Hero Section */}
       <section className="relative min-h-screen flex items-center">
         <div className="absolute inset-0">
           <Image src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80" alt="Dream destination" fill className="object-cover" priority />
@@ -221,7 +271,7 @@ export default function LandingPage() {
               </h1>
               
               <p className="text-lg text-white/80 mb-8 max-w-lg leading-relaxed">
-                AI-powered itineraries tailored to your style. Hotels, flights, activities—all bookable in one tap.
+                AI creates personalized day-by-day itineraries. Just tell us where and when — we handle the rest.
               </p>
 
               <div className="flex flex-wrap items-center gap-6">
@@ -248,114 +298,169 @@ export default function LandingPage() {
                   <Sparkles className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">Create your itinerary</h2>
-                  <p className="text-sm text-gray-500">AI-powered, personalized for you</p>
+                  <h2 className="text-xl font-bold text-gray-900">Plan your trip</h2>
+                  <p className="text-sm text-gray-500">AI-powered • Free to use</p>
                 </div>
               </div>
 
-              {/* Destination Input */}
+              {/* Destination Input with Autocomplete */}
               <div className="mb-4" ref={searchRef}>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Where to?</label>
                 <div className="relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
                     value={destination || searchQuery}
-                    onChange={(e) => { setSearchQuery(e.target.value); setDestination(''); setShowDestDropdown(true); }}
+                    onChange={(e) => { setSearchQuery(e.target.value); setDestination(''); }}
                     onFocus={() => setShowDestDropdown(true)}
-                    placeholder="Search destinations..."
+                    placeholder="Search any city or country..."
                     className="w-full pl-12 pr-10 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   />
-                  {(destination || searchQuery) && (
+                  {isSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 animate-spin" />}
+                  {(destination || searchQuery) && !isSearching && (
                     <button onClick={() => { setDestination(''); setSearchQuery(''); }} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 rounded-full">
                       <X className="w-4 h-4 text-gray-400" />
                     </button>
                   )}
                   
                   {showDestDropdown && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-20 max-h-64 overflow-y-auto">
-                      {filteredDestinations.map((dest) => (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-20 max-h-72 overflow-y-auto">
+                      {searchQuery.length === 0 && <div className="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">POPULAR DESTINATIONS</div>}
+                      {(searchResults.length > 0 ? searchResults : allDestinations.slice(0, 6)).map((dest) => (
                         <button
                           key={dest.id}
-                          onClick={() => { setDestination(dest.name); setSearchQuery(''); setShowDestDropdown(false); }}
+                          onClick={() => selectDestination(dest)}
                           className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors"
                         >
-                          <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
-                            <Image src={dest.image} alt={dest.name} width={48} height={48} className="w-full h-full object-cover" />
+                          <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 relative">
+                            <Image src={dest.image} alt={dest.name} fill className="object-cover" />
                           </div>
-                          <div className="text-left">
+                          <div className="text-left flex-1">
                             <p className="font-medium text-gray-900">{dest.name}</p>
                             <p className="text-sm text-gray-500">{dest.country}</p>
                           </div>
-                          {destination === dest.name && <Check className="w-5 h-5 text-primary ml-auto" />}
+                          <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">{dest.vibe}</span>
                         </button>
                       ))}
+                      {searchQuery.length > 0 && searchResults.length === 0 && !isSearching && (
+                        <div className="px-4 py-8 text-center text-gray-500">
+                          <Globe className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                          <p>No destinations found</p>
+                          <p className="text-sm">Try a different search term</p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-              </div>
-
-              {/* Dates */}
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Check in</label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      min={new Date().toISOString().split('T')[0]}
-                      className="w-full pl-10 pr-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Check out</label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      min={startDate || new Date().toISOString().split('T')[0]}
-                      className="w-full pl-10 pr-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Trip duration badge */}
-              {getTripDuration() && destination && (
-                <div className="mb-4 p-3 bg-primary-50 rounded-xl flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                  <p className="text-sm text-primary-700 font-medium">
-                    {getTripDuration()} day{getTripDuration()! > 1 ? 's' : ''} in {destination}
+                {destination && destinationCountry && (
+                  <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1">
+                    <MapPin className="w-3 h-3" /> {destination}, {destinationCountry}
                   </p>
+                )}
+              </div>
+
+              {/* Date Picker */}
+              <div className="mb-4" ref={dateRef}>
+                <label className="block text-sm font-medium text-gray-700 mb-2">When?</label>
+                <button
+                  onClick={() => setShowDatePicker(!showDatePicker)}
+                  className={`w-full px-4 py-3.5 bg-gray-50 border rounded-xl text-left flex items-center justify-between transition-all ${showDatePicker ? 'border-primary ring-2 ring-primary/20' : 'border-gray-200 hover:border-gray-300'}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className={`font-medium ${dateRange?.from ? 'text-gray-900' : 'text-gray-400'}`}>{formatDateRange()}</p>
+                      {tripDays && <p className="text-xs text-primary font-medium">{tripDays} day{tripDays > 1 ? 's' : ''}</p>}
+                    </div>
+                  </div>
+                  <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showDatePicker ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {showDatePicker && (
+                  <div className="absolute z-30 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4">
+                    <DayPicker
+                      mode="range"
+                      selected={dateRange}
+                      onSelect={setDateRange}
+                      numberOfMonths={2}
+                      disabled={{ before: new Date() }}
+                      showOutsideDays={false}
+                      classNames={{
+                        months: 'flex flex-col sm:flex-row gap-4',
+                        month: 'space-y-4',
+                        caption: 'flex justify-center pt-1 relative items-center',
+                        caption_label: 'text-sm font-semibold text-gray-900',
+                        nav: 'flex items-center gap-1',
+                        nav_button: 'h-7 w-7 bg-transparent p-0 hover:bg-gray-100 rounded-full flex items-center justify-center',
+                        nav_button_previous: 'absolute left-1',
+                        nav_button_next: 'absolute right-1',
+                        table: 'w-full border-collapse space-y-1',
+                        head_row: 'flex',
+                        head_cell: 'text-gray-400 rounded-md w-9 font-medium text-xs',
+                        row: 'flex w-full mt-1',
+                        cell: 'h-9 w-9 text-center text-sm relative',
+                        day: 'h-9 w-9 p-0 font-medium rounded-full hover:bg-gray-100 transition-colors',
+                        day_range_start: 'bg-primary text-white hover:bg-primary',
+                        day_range_end: 'bg-primary text-white hover:bg-primary',
+                        day_selected: 'bg-primary text-white hover:bg-primary',
+                        day_range_middle: 'bg-primary-50 text-primary-700 rounded-none',
+                        day_today: 'border-2 border-primary',
+                        day_outside: 'text-gray-300',
+                        day_disabled: 'text-gray-300 cursor-not-allowed',
+                      }}
+                      components={{
+                        Chevron: ({ orientation }) => orientation === 'left' ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />,
+                      }}
+                    />
+                    <div className="flex justify-end gap-2 mt-4 pt-4 border-t">
+                      <button onClick={() => setDateRange(undefined)} className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">Clear</button>
+                      <button onClick={() => setShowDatePicker(false)} className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-600">Done</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Trip Preview */}
+              {destination && tripDays && (
+                <div className="mb-4 p-4 bg-gradient-to-r from-primary-50 to-amber-50 rounded-xl border border-primary-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center text-xl">✨</div>
+                    <div>
+                      <p className="font-semibold text-gray-900">{tripDays}-day {destination} trip</p>
+                      <p className="text-sm text-gray-600">{format(dateRange!.from!, 'MMM d')} - {format(dateRange!.to!, 'MMM d, yyyy')}</p>
+                    </div>
+                  </div>
                 </div>
               )}
 
               {/* Advanced Options Toggle */}
-              <button
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className="w-full flex items-center justify-between py-3 text-gray-600 hover:text-gray-900 transition-colors mb-4"
-              >
-                <span className="text-sm font-medium">Customize your trip</span>
+              <button onClick={() => setShowAdvanced(!showAdvanced)} className="w-full flex items-center justify-between py-3 text-gray-600 hover:text-gray-900 transition-colors mb-4 border-t border-gray-100 pt-4">
+                <span className="text-sm font-medium flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs">⚙️</span>
+                  Customize trip preferences
+                </span>
                 {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </button>
 
               {/* Advanced Options */}
               {showAdvanced && (
-                <div className="space-y-4 mb-6 pt-4 border-t border-gray-100">
+                <div className="space-y-5 mb-6 pb-4">
                   {/* Travelers */}
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">Travelers</span>
+                    <div>
+                      <span className="text-sm font-medium text-gray-900">Travelers</span>
+                      <p className="text-xs text-gray-500">How many people?</p>
+                    </div>
                     <div className="flex items-center gap-3">
-                      <button onClick={() => setTravelers(Math.max(1, travelers - 1))} disabled={travelers <= 1} className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center hover:border-primary disabled:opacity-50">
+                      <button onClick={() => setTravelers(Math.max(1, travelers - 1))} disabled={travelers <= 1} className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                         <Minus className="w-4 h-4" />
                       </button>
-                      <span className="w-6 text-center font-semibold">{travelers}</span>
-                      <button onClick={() => setTravelers(Math.min(10, travelers + 1))} disabled={travelers >= 10} className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center hover:border-primary disabled:opacity-50">
+                      <span className="w-6 text-center font-semibold text-gray-900">{travelers}</span>
+                      <button onClick={() => setTravelers(Math.min(10, travelers + 1))} disabled={travelers >= 10} className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                         <Plus className="w-4 h-4" />
                       </button>
                     </div>
@@ -363,18 +468,18 @@ export default function LandingPage() {
 
                   {/* Traveler Type */}
                   <div>
-                    <span className="text-sm font-medium text-gray-700 block mb-2">Trip type</span>
-                    <div className="flex flex-wrap gap-2">
+                    <span className="text-sm font-medium text-gray-900 block mb-2">Trip type</span>
+                    <div className="grid grid-cols-4 gap-2">
                       {travelerTypes.map((type) => (
                         <button
                           key={type.id}
                           onClick={() => setTravelerType(type.id)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-all ${
-                            travelerType === type.id ? 'bg-primary-50 text-primary-700 border-2 border-primary' : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:border-gray-200'
+                          className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all ${
+                            travelerType === type.id ? 'bg-primary-50 border-2 border-primary' : 'bg-gray-50 border-2 border-transparent hover:border-gray-200'
                           }`}
                         >
-                          <span>{type.icon}</span>
-                          <span className="font-medium">{type.label}</span>
+                          <span className="text-xl">{type.icon}</span>
+                          <span className={`text-xs font-medium ${travelerType === type.id ? 'text-primary-700' : 'text-gray-600'}`}>{type.label}</span>
                         </button>
                       ))}
                     </div>
@@ -382,14 +487,14 @@ export default function LandingPage() {
 
                   {/* Vibes */}
                   <div>
-                    <span className="text-sm font-medium text-gray-700 block mb-2">Travel vibes</span>
+                    <span className="text-sm font-medium text-gray-900 block mb-2">What's your vibe?</span>
                     <div className="flex flex-wrap gap-2">
                       {vibeOptions.map((vibe) => (
                         <button
                           key={vibe.id}
                           onClick={() => toggleVibe(vibe.id)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-all ${
-                            selectedVibes.includes(vibe.id) ? 'bg-primary-50 text-primary-700 border-2 border-primary' : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:border-gray-200'
+                          className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm transition-all ${
+                            selectedVibes.includes(vibe.id) ? 'bg-primary-50 text-primary-700 border-2 border-primary' : 'bg-gray-50 text-gray-600 border-2 border-transparent hover:border-gray-200'
                           }`}
                         >
                           <span>{vibe.emoji}</span>
@@ -401,38 +506,27 @@ export default function LandingPage() {
                 </div>
               )}
 
-              {/* Error Message */}
-              {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
-                  <p className="text-sm text-red-600">{error}</p>
-                </div>
-              )}
+              {/* Error */}
+              {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl"><p className="text-sm text-red-600">{error}</p></div>}
 
               {/* Generate Button */}
               <button
                 onClick={handleGenerate}
                 disabled={!canGenerate || isGenerating}
                 className={`w-full py-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${
-                  canGenerate && !isGenerating
-                    ? 'bg-gradient-to-r from-primary to-primary-600 text-white shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  canGenerate && !isGenerating ? 'bg-gradient-to-r from-primary to-primary-600 text-white shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 }`}
               >
                 {isGenerating ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    {generationProgress || 'Generating...'}
-                  </>
+                  <><Loader2 className="w-5 h-5 animate-spin" />{generationProgress || 'Creating magic...'}</>
                 ) : (
-                  <>
-                    <Sparkles className="w-5 h-5" />
-                    Generate My Itinerary
-                  </>
+                  <><Sparkles className="w-5 h-5" />Generate My Itinerary</>
                 )}
               </button>
-
-              <p className="text-center text-xs text-gray-500 mt-3">
-                Free • No sign-up required • AI-powered
+              <p className="text-center text-xs text-gray-500 mt-3 flex items-center justify-center gap-3">
+                <span className="flex items-center gap-1"><Check className="w-3 h-3 text-green-500" /> Free</span>
+                <span className="flex items-center gap-1"><Check className="w-3 h-3 text-green-500" /> No signup</span>
+                <span className="flex items-center gap-1"><Check className="w-3 h-3 text-green-500" /> Instant</span>
               </p>
             </div>
           </div>
@@ -445,16 +539,11 @@ export default function LandingPage() {
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-8">
               <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-semibold mb-4">
-                <Check className="w-4 h-4" />
-                Itinerary Generated!
+                <Check className="w-4 h-4" /> Itinerary Ready!
               </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                Your {getTripDuration()}-Day {destination} Adventure
-              </h2>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">Your {tripDays}-Day {destination} Adventure</h2>
               <p className="text-gray-500">{generatedItinerary.overview}</p>
-              {generatedItinerary._demo && (
-                <p className="text-amber-600 text-sm mt-2">⚠️ Demo preview — connect AI Gateway API key for full itineraries</p>
-              )}
+              {generatedItinerary._demo && <p className="text-amber-600 text-sm mt-2">⚠️ Demo preview — add API key for real AI itineraries</p>}
             </div>
 
             <div className="space-y-4">
@@ -475,47 +564,48 @@ export default function LandingPage() {
 
             <div className="text-center mt-8">
               <button className="bg-primary hover:bg-primary-600 text-white px-8 py-4 rounded-full font-semibold shadow-lg shadow-primary/25 transition-all hover:-translate-y-0.5 inline-flex items-center gap-2">
-                View Full Itinerary
-                <ArrowRight className="w-5 h-5" />
+                View Full Itinerary <ArrowRight className="w-5 h-5" />
               </button>
             </div>
           </div>
         </section>
       )}
 
-      {/* Social Proof Bar */}
-      <section className="bg-gray-900 text-white py-4 overflow-hidden">
-        <div className="flex animate-marquee whitespace-nowrap">
-          {[...Array(2)].map((_, i) => (
-            <div key={i} className="flex items-center gap-12 mx-6">
-              <span className="flex items-center gap-2 text-sm"><Check className="w-4 h-4 text-green-400" /> No booking fees</span>
-              <span className="flex items-center gap-2 text-sm"><Check className="w-4 h-4 text-green-400" /> Free cancellation</span>
-              <span className="flex items-center gap-2 text-sm"><Check className="w-4 h-4 text-green-400" /> Best price guarantee</span>
-              <span className="flex items-center gap-2 text-sm"><Check className="w-4 h-4 text-green-400" /> 24/7 support</span>
-            </div>
-          ))}
+      {/* Social Proof */}
+      <section className="bg-gray-900 text-white py-4">
+        <div className="max-w-7xl mx-auto px-4 flex flex-wrap justify-center gap-8 text-sm">
+          <span className="flex items-center gap-2"><Check className="w-4 h-4 text-green-400" /> Always free to plan</span>
+          <span className="flex items-center gap-2"><Check className="w-4 h-4 text-green-400" /> No hidden fees</span>
+          <span className="flex items-center gap-2"><Check className="w-4 h-4 text-green-400" /> Book when you're ready</span>
+          <span className="flex items-center gap-2"><Check className="w-4 h-4 text-green-400" /> 24/7 support</span>
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-16 bg-white border-b border-gray-100">
+      {/* Destinations */}
+      <section id="destinations" className="py-20 lg:py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { value: 50000, suffix: '+', label: 'Trips Planned', icon: TrendingUp },
-              { value: 150, suffix: '+', label: 'Destinations', icon: Globe },
-              { value: 4.9, suffix: '', label: 'User Rating', icon: Star, isDecimal: true },
-              { value: 60, suffix: 's', label: 'Avg. Planning Time', icon: Clock },
-            ].map((stat, i) => (
-              <div key={i} className="text-center">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-primary-50 mb-4">
-                  <stat.icon className="w-6 h-6 text-primary" />
+          <div className="text-center mb-12">
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-3">Trending destinations</h2>
+            <p className="text-gray-500 text-lg">Get inspired by where others are traveling</p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {trendingDestinations.map((dest, i) => (
+              <div key={i} className="group cursor-pointer" onClick={() => { selectDestination(dest); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+                <div className="relative aspect-[3/4] rounded-2xl overflow-hidden mb-4">
+                  <Image src={dest.image} alt={dest.name} fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                  <div className="absolute top-4 left-4">
+                    <span className="bg-white/90 backdrop-blur-sm text-gray-900 px-3 py-1 rounded-full text-xs font-medium">{dest.vibe}</span>
+                  </div>
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <h3 className="text-xl font-bold text-white mb-1">{dest.name}</h3>
+                    <p className="text-white/80 text-sm">{dest.country}</p>
+                  </div>
                 </div>
-                <div className="text-3xl lg:text-4xl font-bold text-gray-900 mb-1">
-                  {stat.isDecimal ? stat.value : <AnimatedCounter value={stat.value} suffix={stat.suffix} />}
-                  {stat.isDecimal && stat.suffix}
-                </div>
-                <div className="text-gray-500 font-medium">{stat.label}</div>
+                <button className="w-full py-3 bg-gray-100 hover:bg-primary hover:text-white rounded-xl font-medium text-gray-700 transition-all flex items-center justify-center gap-2">
+                  <Sparkles className="w-4 h-4" /> Plan this trip
+                </button>
               </div>
             ))}
           </div>
@@ -523,63 +613,24 @@ export default function LandingPage() {
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" className="py-20 lg:py-28 bg-gradient-to-b from-gray-50 to-white">
+      <section id="how-it-works" className="py-20 lg:py-28 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 bg-primary-50 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-4">
-              <Zap className="w-4 h-4" />
-              Lightning Fast
-            </div>
-            <h2 className="text-3xl lg:text-5xl font-bold text-gray-900 mb-4">How TripGenie works</h2>
-            <p className="text-xl text-gray-500 max-w-2xl mx-auto">No more hours of research. Our AI does the heavy lifting.</p>
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">How TripGenie works</h2>
+            <p className="text-xl text-gray-500">Plan smarter, travel better</p>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-8 lg:gap-12">
+          <div className="grid lg:grid-cols-3 gap-8">
             {[
-              { step: '01', title: 'Enter your details', desc: 'Tell us where you want to go and when. Add your travel style for a personalized experience.', icon: '📝', color: 'from-blue-500 to-indigo-600' },
-              { step: '02', title: 'AI creates your plan', desc: 'Our AI analyzes millions of data points to craft your perfect day-by-day itinerary.', icon: '✨', color: 'from-primary to-amber-500' },
-              { step: '03', title: 'Book & enjoy', desc: 'Review your itinerary, make any tweaks, and book flights, hotels, activities in one click.', icon: '🚀', color: 'from-green-500 to-emerald-600' },
+              { step: '01', title: 'Tell us your trip', desc: 'Enter where you want to go and when. Add preferences for a personalized experience.', icon: '📝' },
+              { step: '02', title: 'AI creates your plan', desc: 'Our AI builds a day-by-day itinerary with activities, restaurants, and local tips.', icon: '✨' },
+              { step: '03', title: 'Book when ready', desc: 'Review your plan, make changes, and book flights, hotels, or experiences whenever you want.', icon: '🚀' },
             ].map((item, i) => (
-              <div key={i} className="relative group">
-                <div className="bg-white rounded-3xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 h-full">
-                  <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center text-3xl mb-6 shadow-lg`}>
-                    {item.icon}
-                  </div>
-                  <div className="text-sm font-bold text-primary mb-2">STEP {item.step}</div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">{item.title}</h3>
-                  <p className="text-gray-500 leading-relaxed">{item.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Destinations */}
-      <section id="destinations" className="py-20 lg:py-28">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-12">
-            <div>
-              <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">Trending destinations</h2>
-              <p className="text-gray-500 text-lg">Hand-picked by our travel experts</p>
-            </div>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {destinations.map((dest, i) => (
-              <div key={i} className="group cursor-pointer" onClick={() => { setDestination(dest.name); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-                <div className="relative aspect-[3/4] rounded-2xl overflow-hidden mb-4">
-                  <Image src={dest.image} alt={dest.name} fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <h3 className="text-xl font-bold text-white">{dest.name}</h3>
-                    <p className="text-white/80 text-sm">{dest.country}</p>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-900 font-semibold">From ${dest.price}/night</span>
-                  <span className="text-primary font-medium text-sm">Plan trip →</span>
-                </div>
+              <div key={i} className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg transition-shadow">
+                <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center text-3xl mb-6">{item.icon}</div>
+                <div className="text-sm font-bold text-primary mb-2">STEP {item.step}</div>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">{item.title}</h3>
+                <p className="text-gray-500">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -587,43 +638,28 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-16">
+      <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-12 mb-12">
-            <div>
-              <div className="flex items-center gap-2.5 mb-6">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary-600 flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-lg font-bold">TripGenie</span>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary-600 flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-white" />
               </div>
-              <p className="text-gray-400 leading-relaxed mb-6 max-w-sm">AI-powered travel planning. Create perfect itineraries in seconds.</p>
+              <span className="text-lg font-bold">TripGenie</span>
             </div>
-            {[
-              { title: 'Product', links: ['How it Works', 'Pricing', 'Destinations'] },
-              { title: 'Company', links: ['About', 'Blog', 'Careers'] },
-              { title: 'Support', links: ['Help Center', 'Privacy', 'Terms'] },
-            ].map((col, i) => (
-              <div key={i}>
-                <h4 className="font-semibold mb-4">{col.title}</h4>
-                <ul className="space-y-3">
-                  {col.links.map((link, j) => (
-                    <li key={j}><a href="#" className="text-gray-400 hover:text-white transition-colors">{link}</a></li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            <div className="flex flex-wrap gap-6 text-sm text-gray-400">
+              <a href="#" className="hover:text-white transition-colors">How it Works</a>
+              <a href="#" className="hover:text-white transition-colors">About</a>
+              <a href="#" className="hover:text-white transition-colors">Help</a>
+              <a href="#" className="hover:text-white transition-colors">Privacy</a>
+              <a href="#" className="hover:text-white transition-colors">Terms</a>
+            </div>
           </div>
-          <div className="pt-8 border-t border-gray-800 text-center text-gray-500 text-sm">
-            © 2026 TripGenie. All rights reserved.
+          <div className="mt-8 pt-8 border-t border-gray-800 text-center text-gray-500 text-sm">
+            © 2026 TripGenie. Free to use. We earn when you book.
           </div>
         </div>
       </footer>
-
-      <style jsx>{`
-        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-        .animate-marquee { animation: marquee 20s linear infinite; }
-      `}</style>
     </div>
   );
 }
