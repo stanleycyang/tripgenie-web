@@ -95,12 +95,17 @@ For vibes like:
 - "Relaxation" → spa hotels, beach resorts`;
 
   try {
+    console.log('[Hotels Agent] Using AI Gateway with model:', MODEL);
+    console.log('[Hotels Agent] API Key present:', !!process.env.AI_GATEWAY_API_KEY || !!process.env.VERCEL_AI_GATEWAY_API_KEY);
+    
     const { object: result } = await generateObject({
       model: aiGateway(MODEL),
       system: SYSTEM_PROMPT,
       prompt,
       schema: HotelListSchema,
     });
+
+    console.log('[Hotels Agent] Generated', result.hotels.length, 'hotels');
 
     // Add unique IDs and sort by vibe score
     return result.hotels
@@ -111,7 +116,8 @@ For vibes like:
       .sort((a, b) => b.vibeScore - a.vibeScore);
   } catch (error) {
     console.error('[Hotels Agent] Error:', error);
-    return [];
+    // Re-throw to bubble up to the execute handler
+    throw error;
   }
 }
 
