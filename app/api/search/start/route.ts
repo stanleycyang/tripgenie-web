@@ -92,9 +92,11 @@ export async function POST(request: NextRequest) {
     // Trigger the execute endpoint via fetch (fire and forget)
     // This won't complete within this request's lifetime, but the execute
     // endpoint has its own maxDuration setting
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+      || 'https://backend-eta-nine-28.vercel.app';
+    
+    console.log(`[Search Start] Triggering execute at ${baseUrl}/api/search/${searchId}/execute`);
 
     fetch(`${baseUrl}/api/search/${searchId}/execute`, {
       method: 'POST',
