@@ -1,35 +1,33 @@
 /**
  * TripGenie AI Module
- * Export all AI-related functions and types
+ * Unified exports for AI-powered features
+ * 
+ * Architecture: AI SDK + Vercel AI Gateway
+ * @see https://ai-sdk.dev
+ * @see https://vercel.com/ai-gateway
  */
 
-// Core API functions
+// Main client (AI Gateway + AI SDK)
 export {
   generateItinerary,
+  streamItinerary,
   generateActivities,
   generateRestaurants,
+  generateText_AI,
   validateApiKey,
-  estimateTokens,
-  estimateCost,
-} from './claude';
+} from './client';
 
-// Type definitions
-export type {
-  TripPreferences,
-  Activity,
-  Restaurant,
-  TripDay,
-  GeneratedItinerary,
-  ItineraryGenerationRequest,
-  StreamingProgress,
-  AIGenerationError,
-} from './types';
+// Types
+export * from './types';
 
-// Prompts (for advanced usage)
+// Prompts (for customization)
 export {
   SYSTEM_PROMPT,
+  VIBE_EXAMPLES,
   buildItineraryPrompt,
   buildActivityRecommendationPrompt,
   buildRestaurantPrompt,
-  VIBE_EXAMPLES,
 } from './prompts';
+
+// Legacy direct Anthropic client (for reference/fallback)
+export * as legacyClient from './claude';
