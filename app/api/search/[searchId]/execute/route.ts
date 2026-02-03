@@ -6,6 +6,10 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+
+// Allow up to 60 seconds for AI generation (requires Vercel Pro plan)
+// On Hobby plan, this will be capped at 10 seconds
+export const maxDuration = 60;
 import { SearchInput, SearchProgress, SearchResults } from '@/lib/search/types';
 import {
   runOrchestratorAgent,

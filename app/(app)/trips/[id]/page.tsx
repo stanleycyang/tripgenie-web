@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Loader2, AlertCircle, MapPin, RefreshCw, Sparkles } from 'lucide-react';
 import { TripHeader } from '@/components/trips/TripHeader';
 import { ItineraryDay } from '@/components/trips/ItineraryDay';
+import { ShareButtons } from '@/components/ShareButtons';
 import type { GeneratedItinerary, TripDay } from '@/lib/ai/types';
 
 interface Trip {
@@ -297,6 +298,20 @@ export default function TripDetailPage() {
                 </span>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Share This Trip */}
+        {tripStatus === 'completed' && itinerary && (
+          <div className="mt-8 bg-gradient-to-r from-primary-50 to-purple-50 rounded-2xl p-6 text-center">
+            <h3 className="font-semibold text-gray-900 mb-2">📤 Share Your Adventure</h3>
+            <p className="text-sm text-gray-600 mb-4">Let friends and family know about your upcoming trip!</p>
+            <ShareButtons
+              title={`My ${trip.destination} Trip Itinerary`}
+              description={`Check out my ${itinerary.days?.length || ''}-day AI-generated itinerary to ${trip.destination}! Created with TripGenie.`}
+              hashtags={['TripGenie', 'Travel', trip.destination.replace(/\s+/g, '')]}
+              className="justify-center"
+            />
           </div>
         )}
       </main>

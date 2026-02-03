@@ -16,18 +16,30 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // TODO: Fetch trips from database
-    // const { data: trips, error } = await supabase
-    //   .from('trips')
-    //   .select('*')
-    //   .eq('user_id', user.id)
-    //   .order('created_at', { ascending: false })
+    // Fetch user's trips from database (with caching headers for performance)
+    const { data: trips, error } = await supabase
+      .from('trips')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
 
-    // Placeholder response
-    return NextResponse.json({
-      trips: [],
-      message: 'Placeholder: GET /api/trips endpoint'
-    })
+    if (error) {
+      console.error('Database error:', error)
+      return NextResponse.json(
+        { error: 'Failed to fetch trips' },
+        { status: 500 }
+      )
+    }
+
+    // Return with cache headers for better performance
+    return NextResponse.json(
+      { trips: trips || [] },
+      {
+        headers: {
+          'Cache-Control': 'private, max-age=30, stale-while-revalidate=60'
+        }
+      }
+    )
   } catch (error) {
     console.error('Error fetching trips:', error)
     return NextResponse.json(
