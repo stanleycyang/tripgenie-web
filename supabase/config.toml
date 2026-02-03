@@ -1,9 +1,5 @@
 # TripGenie Supabase Configuration
-# This file is used by the Supabase CLI for local development and deployments
-
-[project]
-# Project name (matches production)
-name = "tripgenie-prod"
+# This file is used by the Supabase CLI for local development
 
 [api]
 enabled = true
@@ -47,19 +43,5 @@ enable_signup = true
 double_confirm_changes = true
 enable_confirmations = true
 
-[auth.external.google]
-enabled = true
-# client_id and secret should be in .env
-
-[auth.external.apple]
-enabled = true
-# credentials should be in .env
-
-# Edge Functions
-[edge_runtime]
-enabled = false
-
-# Realtime
 [realtime]
 enabled = true
-max_concurrent_users = 200

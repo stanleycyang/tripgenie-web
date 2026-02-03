@@ -116,6 +116,7 @@ Score each restaurant 0-100 on how well it matches the traveler's vibes.`;
       .map((restaurant, index) => ({
         ...restaurant,
         id: `dining_${Date.now()}_${index}`,
+        priceLevel: restaurant.priceLevel as 1 | 2 | 3 | 4,
       }))
       .sort((a, b) => b.vibeScore - a.vibeScore);
   } catch (error) {
