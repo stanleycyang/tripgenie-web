@@ -5,4 +5,5 @@
 
 export * from './types';
 export * from './agents';
-export { executeTravelSearch, TravelSearchWorkflowInput, TravelSearchWorkflowOutput } from './workflow';
+export { executeTravelSearch } from './workflow';
+export type { TravelSearchWorkflowInput, TravelSearchWorkflowOutput } from './workflow';
