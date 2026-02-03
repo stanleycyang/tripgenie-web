@@ -1,0 +1,65 @@
+# TripGenie Supabase Configuration
+# This file is used by the Supabase CLI for local development and deployments
+
+[project]
+# Project name (matches production)
+name = "tripgenie-prod"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "auth", "storage"]
+extra_search_path = ["public"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[db.pooler]
+enabled = false
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://localhost"
+
+[inbucket]
+enabled = true
+port = 54324
+smtp_port = 54325
+pop3_port = 54326
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000/auth/callback"]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true
+
+[auth.external.google]
+enabled = true
+# client_id and secret should be in .env
+
+[auth.external.apple]
+enabled = true
+# credentials should be in .env
+
+# Edge Functions
+[edge_runtime]
+enabled = false
+
+# Realtime
+[realtime]
+enabled = true
+max_concurrent_users = 200
