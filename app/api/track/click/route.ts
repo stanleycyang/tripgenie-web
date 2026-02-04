@@ -4,14 +4,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase/server';
 import { optionalAuth } from '@/lib/auth';
 import { z } from 'zod';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
 
 const ClickTrackingSchema = z.object({
   // What was clicked
@@ -54,7 +50,7 @@ export async function POST(request: NextRequest) {
     const clickId = `click_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     // Store click in database
-    const { error } = await supabase.from('affiliate_clicks').insert({
+    const { error } = await getSupabase().from('affiliate_clicks').insert({
       id: clickId,
       user_id: user?.id || null,
       item_type: data.itemType,

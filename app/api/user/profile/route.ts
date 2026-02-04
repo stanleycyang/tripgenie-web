@@ -5,14 +5,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase/server';
 import { requireAuth, validationErrorResponse, AuthResult } from '@/lib/auth/middleware';
 import { z } from 'zod';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
 
 const UpdateProfileSchema = z.object({
   email: z.string().email().optional(),
@@ -29,7 +25,7 @@ export async function GET(request: NextRequest) {
   const { user } = authResult as AuthResult;
 
   try {
-    const { data: profile, error } = await supabase
+    const { data: profile, error } = await getSupabase()
       .from('users')
       .select('*')
       .eq('id', user!.id)
@@ -90,7 +86,7 @@ export async function PATCH(request: NextRequest) {
       return validationErrorResponse('No fields to update');
     }
 
-    const { data: profile, error } = await supabase
+    const { data: profile, error } = await getSupabase()
       .from('users')
       .update(updates)
       .eq('id', user!.id)

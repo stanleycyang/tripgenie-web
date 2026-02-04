@@ -4,14 +4,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase/server';
 import { z } from 'zod';
 import crypto from 'crypto';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
 
 // Webhook secrets for each affiliate partner
 const WEBHOOK_SECRETS: Record<string, string | undefined> = {
@@ -103,7 +99,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Find the original click
-    const { data: click, error: findError } = await supabase
+    const { data: click, error: findError } = await getSupabase()
       .from('affiliate_clicks')
       .select('*')
       .eq('id', data.click_id)
@@ -115,7 +111,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Record the conversion
-    const { error: insertError } = await supabase.from('affiliate_conversions').insert({
+    const { error: insertError } = await getSupabase().from('affiliate_conversions').insert({
       click_id: data.click_id,
       partner: data.partner,
       order_id: data.order_id,
@@ -138,7 +134,7 @@ export async function POST(request: NextRequest) {
 
     // Update the original click as converted
     if (click) {
-      await supabase
+      await getSupabase()
         .from('affiliate_clicks')
         .update({
           converted: true,

@@ -1,27 +1,29 @@
 /**
  * POST /api/search/start
- * Start a new travel search workflow
- * 
- * Uses streaming to return immediately while processing continues
+ * Start a new travel search using Vercel Workflow + AI SDK Agents
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { SearchInput, StartSearchResponse } from '@/lib/search/types';
+import { getSupabase } from '@/lib/supabase/server';
+import { start } from 'workflow/api';
+import { planTripWorkflow } from '@/workflows/plan-trip';
 
-// Initialize Supabase client with service role for server operations
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
+interface SearchInput {
+  destination: string;
+  startDate: string;
+  endDate: string;
+  travelers?: number;
+  travelerType?: string;
+  vibes?: string[];
+  budget?: string;
+}
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
-    // Validate required fields
     const { destination, startDate, endDate, travelers, travelerType, vibes, budget } = body as SearchInput;
-    
+
+    // Validate required fields
     if (!destination || !startDate || !endDate) {
       return NextResponse.json(
         { error: 'Missing required fields: destination, startDate, endDate' },
@@ -32,15 +34,15 @@ export async function POST(request: NextRequest) {
     // Get user ID from auth header if present
     const authHeader = request.headers.get('Authorization');
     let userId: string | null = null;
-    
+
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
-      const { data: { user } } = await supabase.auth.getUser(token);
+      const { data: { user } } = await getSupabase().auth.getUser(token);
       userId = user?.id || null;
     }
 
-    // Create search record in database
-    const { data: search, error: insertError } = await supabase
+    // Create search record
+    const { data: search, error: insertError } = await getSupabase()
       .from('searches')
       .insert({
         user_id: userId,
@@ -72,16 +74,6 @@ export async function POST(request: NextRequest) {
     }
 
     const searchId = search.id;
-    const workflowRunId = `wf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    // Update search with workflow ID and start status
-    await supabase
-      .from('searches')
-      .update({ 
-        workflow_run_id: workflowRunId,
-        status: 'searching',
-      })
-      .eq('id', searchId);
 
     // Calculate estimated time
     const nights = Math.ceil(
@@ -89,40 +81,29 @@ export async function POST(request: NextRequest) {
     );
     const estimatedTime = Math.min(60, 20 + nights * 5);
 
-    // Trigger the execute endpoint via fetch (fire and forget)
-    // This won't complete within this request's lifetime, but the execute
-    // endpoint has its own maxDuration setting
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL
-      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
-      || 'https://backend-eta-nine-28.vercel.app';
-    
-    console.log(`[Search Start] Triggering execute at ${baseUrl}/api/search/${searchId}/execute`);
-
-    fetch(`${baseUrl}/api/search/${searchId}/execute`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        destination,
-        startDate,
-        endDate,
-        travelers: travelers || 2,
-        travelerType,
-        vibes: vibes || [],
-        budget: budget || 'moderate',
-        userId: userId || undefined,
-      }),
-    }).catch(error => {
-      console.error('[Search Start] Execute trigger error:', error);
-    });
-
-    const response: StartSearchResponse = {
+    // Start the durable workflow (doesn't block)
+    await start(planTripWorkflow, [{
       searchId,
-      workflowRunId,
+      destination,
+      startDate,
+      endDate,
+      travelers: travelers || 2,
+      vibes: vibes || [],
+      budget: budget || 'moderate',
+      userId: userId || undefined,
+    }]);
+
+    // Update status to searching
+    await getSupabase()
+      .from('searches')
+      .update({ status: 'searching' })
+      .eq('id', searchId);
+
+    return NextResponse.json({
+      searchId,
       status: 'started',
       estimatedTime,
-    };
-
-    return NextResponse.json(response);
+    });
   } catch (error) {
     console.error('[Search Start] Error:', error);
     return NextResponse.json(
@@ -131,4 +112,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-// Pro plan redeploy 1770161771

@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase/server';
 
 // Allow up to 60 seconds for AI generation (requires Vercel Pro plan)
 // On Hobby plan, this will be capped at 10 seconds
@@ -19,14 +19,10 @@ import {
   runAggregatorAgent,
 } from '@/lib/search/agents';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
 
 // Helper to update progress
 async function updateProgress(searchId: string, progress: Partial<SearchProgress>) {
-  const { data: current } = await supabase
+  const { data: current } = await getSupabase()
     .from('searches')
     .select('progress')
     .eq('id', searchId)
@@ -34,7 +30,7 @@ async function updateProgress(searchId: string, progress: Partial<SearchProgress
 
   const newProgress = { ...current?.progress, ...progress };
 
-  await supabase
+  await getSupabase()
     .from('searches')
     .update({ progress: newProgress })
     .eq('id', searchId);
@@ -46,7 +42,7 @@ async function saveResult(
   category: string,
   item: any
 ) {
-  await supabase.from('search_results').insert({
+  await getSupabase().from('search_results').insert({
     search_id: searchId,
     category,
     name: item.name,
@@ -135,7 +131,7 @@ export async function POST(
 
     // Save itinerary days
     for (const day of days) {
-      await supabase.from('search_itineraries').insert({
+      await getSupabase().from('search_itineraries').insert({
         search_id: searchId,
         day_number: day.dayNumber,
         date: day.date,
@@ -156,7 +152,7 @@ export async function POST(
     }
 
     // Mark search as completed
-    await supabase
+    await getSupabase()
       .from('searches')
       .update({
         status: 'completed',
@@ -179,7 +175,7 @@ export async function POST(
     console.error(`[Search Execute] Error for ${searchId}:`, error);
 
     // Mark search as failed
-    await supabase
+    await getSupabase()
       .from('searches')
       .update({
         status: 'error',

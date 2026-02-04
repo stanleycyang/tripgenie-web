@@ -4,13 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase/server';
 import { SearchStatusResponse, SearchResults, HotelResult, ActivityResult, DiningResult, SuggestedDay } from '@/lib/search/types';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
 
 export async function GET(
   request: NextRequest,
@@ -20,7 +15,7 @@ export async function GET(
 
   try {
     // Get search record
-    const { data: search, error: searchError } = await supabase
+    const { data: search, error: searchError } = await getSupabase()
       .from('searches')
       .select('*')
       .eq('id', searchId)
@@ -45,14 +40,14 @@ export async function GET(
     // If completed, include results
     if (search.status === 'completed') {
       // Get all results
-      const { data: resultsData } = await supabase
+      const { data: resultsData } = await getSupabase()
         .from('search_results')
         .select('*')
         .eq('search_id', searchId)
         .order('vibe_score', { ascending: false });
 
       // Get itinerary
-      const { data: itineraryData } = await supabase
+      const { data: itineraryData } = await getSupabase()
         .from('search_itineraries')
         .select('*')
         .eq('search_id', searchId)
@@ -167,7 +162,7 @@ export async function PATCH(
 
     if (progress) {
       // Merge with existing progress
-      const { data: current } = await supabase
+      const { data: current } = await getSupabase()
         .from('searches')
         .select('progress')
         .eq('id', searchId)
@@ -180,7 +175,7 @@ export async function PATCH(
       updates.error_message = errorMessage;
     }
 
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from('searches')
       .update(updates)
       .eq('id', searchId);
