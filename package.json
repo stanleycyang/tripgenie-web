@@ -14,10 +14,17 @@
     "migrate:down": "tsx src/config/migrate.ts down",
     "test": "vitest"
   },
-  "keywords": ["travel", "ai", "planning", "trips"],
+  "keywords": [
+    "travel",
+    "ai",
+    "planning",
+    "trips"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@json-render/core": "^0.5.2",
+    "@json-render/react": "^0.5.2",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",

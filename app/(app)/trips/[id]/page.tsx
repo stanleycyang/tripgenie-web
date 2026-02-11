@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, AlertCircle, MapPin, RefreshCw, Sparkles } from 'lucide-react';
 import { TripHeader } from '@/components/trips/TripHeader';
 import { ItineraryDay } from '@/components/trips/ItineraryDay';
+import { StreamingItinerary } from '@/components/trips/StreamingItinerary';
 import { ShareButtons } from '@/components/ShareButtons';
-import type { GeneratedItinerary, TripDay } from '@/lib/ai/types';
+import type { GeneratedItinerary, TripDay, TripPreferences } from '@/lib/ai/types';
 
 interface Trip {
   id: string;
@@ -54,6 +55,20 @@ export default function TripDetailPage() {
   const [workflowStatus, setWorkflowStatus] = useState<WorkflowStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [useStreamingUI, setUseStreamingUI] = useState(false);
+
+  // Build TripPreferences from trip data for the streaming UI
+  const streamingPreferences = useMemo<TripPreferences | null>(() => {
+    if (!trip) return null;
+    return {
+      destination: trip.destination,
+      startDate: trip.start_date,
+      endDate: trip.end_date,
+      budget: 'moderate',
+      vibes: trip.vibes || ['adventure'],
+      travelers: { adults: trip.travelers || 1, children: 0 },
+    };
+  }, [trip]);
 
   // Fetch trip data
   const fetchTrip = useCallback(async () => {
@@ -70,6 +85,10 @@ export default function TripDetailPage() {
       setTrip(data.trip);
       if (data.itinerary) {
         setItinerary(data.itinerary);
+      }
+      // Enable streaming generative UI for trips that are currently generating
+      if (data.trip.status === 'generating' && !data.itinerary) {
+        setUseStreamingUI(true);
       }
       return data.trip;
     } catch (err) {
@@ -199,120 +218,139 @@ export default function TripDetailPage() {
       />
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        {/* Generation Progress */}
-        {tripStatus === 'generating' && workflowStatus && (
-          <GenerationProgress status={workflowStatus} />
-        )}
+        {/* ── Streaming Generative UI ─────────────────────────────────
+             When the trip is generating (or user triggered a regeneration),
+             render the itinerary incrementally via json-render instead of
+             waiting for the full workflow to complete. */}
+        {useStreamingUI && streamingPreferences ? (
+          <StreamingItinerary
+            preferences={streamingPreferences}
+            onComplete={() => {
+              // Refetch trip data so the static view has the latest state
+              fetchTrip();
+            }}
+            onError={(msg) => {
+              console.error('[StreamingUI]', msg);
+            }}
+          />
+        ) : (
+          <>
+            {/* Generation Progress (legacy polling fallback) */}
+            {tripStatus === 'generating' && workflowStatus && (
+              <GenerationProgress status={workflowStatus} />
+            )}
 
-        {/* Generation Failed */}
-        {tripStatus === 'failed' && (
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-6 mb-6">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <AlertCircle className="w-5 h-5 text-red-600" />
+            {/* Generation Failed */}
+            {tripStatus === 'failed' && (
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-6 mb-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <AlertCircle className="w-5 h-5 text-red-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-red-800 mb-1">Generation Failed</h3>
+                    <p className="text-sm text-red-700 mb-4">
+                      {workflowStatus?.result?.error || 'Something went wrong while generating your itinerary. Please try again.'}
+                    </p>
+                    <button
+                      onClick={handleRetry}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      Try Again
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-red-800 mb-1">Generation Failed</h3>
-                <p className="text-sm text-red-700 mb-4">
-                  {workflowStatus?.result?.error || 'Something went wrong while generating your itinerary. Please try again.'}
-                </p>
-                <button
-                  onClick={handleRetry}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Try Again
-                </button>
+            )}
+
+            {/* Overview Section */}
+            {itinerary?.overview && (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-3">Trip Overview</h2>
+                <p className="text-gray-600">{itinerary.overview}</p>
+              </div>
+            )}
+
+            {/* Map Placeholder */}
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-6">
+              <div className="h-48 sm:h-64 bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center justify-center">
+                <MapPin className="w-10 h-10 text-gray-400 mb-2" />
+                <p className="text-gray-500 font-medium">Interactive Map</p>
+                <p className="text-sm text-gray-400">Coming soon</p>
               </div>
             </div>
-          </div>
-        )}
 
-        {/* Overview Section */}
-        {itinerary?.overview && (
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">Trip Overview</h2>
-            <p className="text-gray-600">{itinerary.overview}</p>
-          </div>
-        )}
+            {/* Day-by-Day Itinerary */}
+            {itinerary?.days && itinerary.days.length > 0 ? (
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold text-gray-900">Day-by-Day Itinerary</h2>
+                {itinerary.days.map((day, index) => (
+                  <ItineraryDay
+                    key={day.dayNumber}
+                    dayNumber={day.dayNumber}
+                    date={day.date}
+                    title={day.title}
+                    summary={day.summary}
+                    morning={day.morning}
+                    afternoon={day.afternoon}
+                    evening={day.evening}
+                    totalEstimatedCost={day.totalEstimatedCost}
+                    tips={day.tips}
+                    defaultExpanded={index === 0}
+                  />
+                ))}
+              </div>
+            ) : tripStatus === 'completed' ? (
+              <EmptyItinerary destination={trip.destination} />
+            ) : null}
 
-        {/* Map Placeholder */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-6">
-          <div className="h-48 sm:h-64 bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center justify-center">
-            <MapPin className="w-10 h-10 text-gray-400 mb-2" />
-            <p className="text-gray-500 font-medium">Interactive Map</p>
-            <p className="text-sm text-gray-400">Coming soon</p>
-          </div>
-        </div>
+            {/* General Tips */}
+            {itinerary?.generalTips && itinerary.generalTips.length > 0 && (
+              <div className="mt-6 bg-primary-50 rounded-2xl p-6">
+                <h3 className="font-semibold text-primary-800 mb-3">Travel Tips for {trip.destination}</h3>
+                <ul className="space-y-2">
+                  {itinerary.generalTips.map((tip, i) => (
+                    <li key={i} className="text-sm text-primary-700 flex items-start gap-2">
+                      <span className="text-primary-400 mt-0.5">&bull;</span>
+                      <span>{tip}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-        {/* Day-by-Day Itinerary */}
-        {itinerary?.days && itinerary.days.length > 0 ? (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">Day-by-Day Itinerary</h2>
-            {itinerary.days.map((day, index) => (
-              <ItineraryDay
-                key={day.dayNumber}
-                dayNumber={day.dayNumber}
-                date={day.date}
-                title={day.title}
-                summary={day.summary}
-                morning={day.morning}
-                afternoon={day.afternoon}
-                evening={day.evening}
-                totalEstimatedCost={day.totalEstimatedCost}
-                tips={day.tips}
-                defaultExpanded={index === 0}
-              />
-            ))}
-          </div>
-        ) : tripStatus === 'completed' ? (
-          <EmptyItinerary destination={trip.destination} />
-        ) : null}
+            {/* Packing List */}
+            {itinerary?.packingList && itinerary.packingList.length > 0 && (
+              <div className="mt-6 bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                <h3 className="font-semibold text-gray-900 mb-3">Packing Suggestions</h3>
+                <div className="flex flex-wrap gap-2">
+                  {itinerary.packingList.map((item, i) => (
+                    <span
+                      key={i}
+                      className="inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-gray-100 text-gray-700"
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
-        {/* General Tips */}
-        {itinerary?.generalTips && itinerary.generalTips.length > 0 && (
-          <div className="mt-6 bg-primary-50 rounded-2xl p-6">
-            <h3 className="font-semibold text-primary-800 mb-3">💡 Travel Tips for {trip.destination}</h3>
-            <ul className="space-y-2">
-              {itinerary.generalTips.map((tip, i) => (
-                <li key={i} className="text-sm text-primary-700 flex items-start gap-2">
-                  <span className="text-primary-400 mt-0.5">•</span>
-                  <span>{tip}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Packing List */}
-        {itinerary?.packingList && itinerary.packingList.length > 0 && (
-          <div className="mt-6 bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-            <h3 className="font-semibold text-gray-900 mb-3">🧳 Packing Suggestions</h3>
-            <div className="flex flex-wrap gap-2">
-              {itinerary.packingList.map((item, i) => (
-                <span
-                  key={i}
-                  className="inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-gray-100 text-gray-700"
-                >
-                  {item}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Share This Trip */}
-        {tripStatus === 'completed' && itinerary && (
-          <div className="mt-8 bg-gradient-to-r from-primary-50 to-purple-50 rounded-2xl p-6 text-center">
-            <h3 className="font-semibold text-gray-900 mb-2">📤 Share Your Adventure</h3>
-            <p className="text-sm text-gray-600 mb-4">Let friends and family know about your upcoming trip!</p>
-            <ShareButtons
-              title={`My ${trip.destination} Trip Itinerary`}
-              description={`Check out my ${itinerary.days?.length || ''}-day AI-generated itinerary to ${trip.destination}! Created with TripGenie.`}
-              hashtags={['TripGenie', 'Travel', trip.destination.replace(/\s+/g, '')]}
-              className="justify-center"
-            />
-          </div>
+            {/* Share This Trip */}
+            {tripStatus === 'completed' && itinerary && (
+              <div className="mt-8 bg-gradient-to-r from-primary-50 to-purple-50 rounded-2xl p-6 text-center">
+                <h3 className="font-semibold text-gray-900 mb-2">Share Your Adventure</h3>
+                <p className="text-sm text-gray-600 mb-4">Let friends and family know about your upcoming trip!</p>
+                <ShareButtons
+                  title={`My ${trip.destination} Trip Itinerary`}
+                  description={`Check out my ${itinerary.days?.length || ''}-day AI-generated itinerary to ${trip.destination}! Created with TripGenie.`}
+                  hashtags={['TripGenie', 'Travel', trip.destination.replace(/\s+/g, '')]}
+                  className="justify-center"
+                />
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>
