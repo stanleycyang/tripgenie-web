@@ -24,8 +24,8 @@ import { DatePicker } from './DatePicker'
 // Validation schema
 const tripSchema = z.object({
   destination: z.string().min(1, 'Please select a destination'),
-  startDate: z.date({ error: 'Please select a start date' }),
-  endDate: z.date({ error: 'Please select an end date' }),
+  startDate: z.date({ required_error: 'Please select a start date', invalid_type_error: 'Please select a start date' }),
+  endDate: z.date({ required_error: 'Please select an end date', invalid_type_error: 'Please select an end date' }),
   adults: z.number().min(1, 'At least 1 adult required').max(20),
   children: z.number().min(0).max(20),
   budget: z.enum(['budget', 'moderate', 'luxury', 'ultra-luxury']),

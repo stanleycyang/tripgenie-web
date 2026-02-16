@@ -26,12 +26,9 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  poweredBy: false,
 };
 
 export default withWorkflow(nextConfig, {
   workflows: {
-    // Scan only the workflows directory for better build performance
-    dirs: ['workflows', 'app/api'],
   },
 });

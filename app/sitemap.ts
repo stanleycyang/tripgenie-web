@@ -1,4 +1,5 @@
 import { MetadataRoute } from 'next'
+import { getAllPostMetas, getAllCategories } from '@/lib/blog'
 
 // Static destinations for sitemap
 const popularDestinations = [
@@ -48,5 +49,29 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.8,
   }))
   
-  return [...staticPages, ...destinationPages]
+  // Blog pages
+  const blogIndex: MetadataRoute.Sitemap = [
+    {
+      url: `${baseUrl}/blog`,
+      lastModified: currentDate,
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
+  ]
+
+  const blogPosts: MetadataRoute.Sitemap = getAllPostMetas().map(post => ({
+    url: `${baseUrl}/blog/${post.slug}`,
+    lastModified: post.lastUpdated || post.date,
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }))
+
+  const blogCategories: MetadataRoute.Sitemap = getAllCategories().map(cat => ({
+    url: `${baseUrl}/blog/category/${cat.toLowerCase().replace(/\s+/g, '-')}`,
+    lastModified: currentDate,
+    changeFrequency: 'weekly' as const,
+    priority: 0.6,
+  }))
+
+  return [...staticPages, ...destinationPages, ...blogIndex, ...blogPosts, ...blogCategories]
 }

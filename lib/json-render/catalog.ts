@@ -5,9 +5,9 @@
 
 import { defineCatalog } from '@json-render/core';
 import { schema } from '@json-render/react';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
-export const catalog = defineCatalog(schema, {
+export const catalog = (defineCatalog as any)(schema, {
   components: {
     // Itinerary Components
     ItineraryDay: {

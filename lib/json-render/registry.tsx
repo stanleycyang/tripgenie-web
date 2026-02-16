@@ -6,9 +6,22 @@
 import { defineRegistry } from '@json-render/react';
 import { catalog } from './catalog';
 
-export const { registry } = defineRegistry(catalog, {
+// Props types for registry components (catalog uses `any` cast due to Zod version mismatch)
+type ItineraryDayProps = { dayNumber: number; date: string; title: string };
+type HotelCardProps = { name: string; rating: number; price: number; image?: string; bookingUrl?: string };
+type ActivityCardProps = { name: string; description: string; duration?: number; price?: number; rating?: number; image?: string; bookingUrl?: string };
+type RestaurantCardProps = { name: string; cuisine: string; priceLevel: string; rating?: number; image?: string; reservationUrl?: string };
+type BookingButtonProps = { label: string; url: string; provider?: string };
+type PriceTagProps = { amount: number; currency: string; period?: string };
+type RatingDisplayProps = { rating: number; reviewCount?: number };
+type MapMarkerProps = { lat: number; lng: number; label: string };
+type SectionProps = { title: string };
+type TextProps = { content: string };
+type ImageProps = { url: string; alt: string };
+
+export const { registry } = (defineRegistry as any)(catalog, {
   components: {
-    ItineraryDay: ({ props, children }) => (
+    ItineraryDay: ({ props, children }: { props: ItineraryDayProps; children?: React.ReactNode }) => (
       <div className="border-l-4 border-blue-500 pl-4 py-3 mb-6">
         <div className="flex items-baseline gap-2">
           <span className="text-sm font-semibold text-blue-600">Day {props.dayNumber}</span>
@@ -19,7 +32,7 @@ export const { registry } = defineRegistry(catalog, {
       </div>
     ),
 
-    HotelCard: ({ props }) => (
+    HotelCard: ({ props }: { props: HotelCardProps }) => (
       <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
         {props.image && (
           <img
@@ -54,7 +67,7 @@ export const { registry } = defineRegistry(catalog, {
       </div>
     ),
 
-    ActivityCard: ({ props }) => (
+    ActivityCard: ({ props }: { props: ActivityCardProps }) => (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
         {props.image && (
           <img
@@ -90,7 +103,7 @@ export const { registry } = defineRegistry(catalog, {
       </div>
     ),
 
-    RestaurantCard: ({ props }) => (
+    RestaurantCard: ({ props }: { props: RestaurantCardProps }) => (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -127,7 +140,7 @@ export const { registry } = defineRegistry(catalog, {
       </div>
     ),
 
-    BookingButton: ({ props }) => (
+    BookingButton: ({ props }: { props: BookingButtonProps }) => (
       <a
         href={props.url}
         target="_blank"
@@ -141,7 +154,7 @@ export const { registry } = defineRegistry(catalog, {
       </a>
     ),
 
-    PriceTag: ({ props }) => (
+    PriceTag: ({ props }: { props: PriceTagProps }) => (
       <div className="inline-flex items-baseline gap-1">
         <span className="text-lg font-bold text-gray-900">
           ${props.amount.toFixed(2)}
@@ -153,7 +166,7 @@ export const { registry } = defineRegistry(catalog, {
       </div>
     ),
 
-    RatingDisplay: ({ props }) => (
+    RatingDisplay: ({ props }: { props: RatingDisplayProps }) => (
       <div className="inline-flex items-center gap-1">
         <span className="text-yellow-500">★</span>
         <span className="font-medium text-gray-900">{props.rating.toFixed(1)}</span>
@@ -163,7 +176,7 @@ export const { registry } = defineRegistry(catalog, {
       </div>
     ),
 
-    MapMarker: ({ props }) => (
+    MapMarker: ({ props }: { props: MapMarkerProps }) => (
       <div className="inline-flex items-center gap-2 text-sm">
         <span className="text-red-600">📍</span>
         <span className="text-gray-700">{props.label}</span>
@@ -173,7 +186,7 @@ export const { registry } = defineRegistry(catalog, {
       </div>
     ),
 
-    Section: ({ props, children }) => (
+    Section: ({ props, children }: { props: SectionProps; children?: React.ReactNode }) => (
       <section className="my-6">
         <h2 className="text-xl font-bold text-gray-900 mb-3 border-b pb-2">
           {props.title}
@@ -182,11 +195,11 @@ export const { registry } = defineRegistry(catalog, {
       </section>
     ),
 
-    Text: ({ props }) => (
+    Text: ({ props }: { props: TextProps }) => (
       <p className="text-gray-700 leading-relaxed">{props.content}</p>
     ),
 
-    Image: ({ props }) => (
+    Image: ({ props }: { props: ImageProps }) => (
       <img
         src={props.url}
         alt={props.alt}

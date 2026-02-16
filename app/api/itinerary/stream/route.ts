@@ -8,11 +8,10 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { catalog } from '@/lib/json-render/catalog';
+import { catalogPrompt } from '@/lib/json-render/catalog-server';
 import { planTrip } from '@/lib/agents/travel-agent';
-import { createSpecStreamCompiler } from '@json-render/core';
 
-export const runtime = 'edge';
+
 export const maxDuration = 60;
 
 const StreamRequestSchema = z.object({
@@ -39,7 +38,7 @@ export async function POST(request: NextRequest) {
     const params = parseResult.data;
 
     // Generate the system prompt for the AI that includes the catalog
-    const systemPrompt = `${catalog.prompt()}
+    const systemPrompt = `${catalogPrompt}
 
 You are generating a travel itinerary UI using json-render components.
 
