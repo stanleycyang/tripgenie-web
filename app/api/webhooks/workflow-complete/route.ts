@@ -22,9 +22,14 @@ const WebhookPayloadSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify webhook secret (optional but recommended)
+    // Verify webhook secret (required in production)
     const webhookSecret = process.env.WORKFLOW_WEBHOOK_SECRET;
     const authHeader = request.headers.get('x-webhook-secret');
+    
+    if (!webhookSecret && process.env.NODE_ENV === 'production') {
+      console.error('[Webhook] WORKFLOW_WEBHOOK_SECRET not configured in production');
+      return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+    }
     
     if (webhookSecret && authHeader !== webhookSecret) {
       return NextResponse.json(

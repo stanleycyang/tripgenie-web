@@ -642,6 +642,216 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Features Section */}
+      <section id="features" className="py-20 lg:py-28">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Everything you need in one place</h2>
+            <p className="text-xl text-gray-500">AI-powered planning with real bookings</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="text-center">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-primary-50 to-amber-50 flex items-center justify-center">
+                <Sparkles className="w-10 h-10 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">AI-Powered Planning</h3>
+              <p className="text-gray-600">Smart algorithms create personalized itineraries based on your preferences and travel style.</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-blue-50 to-sky-50 flex items-center justify-center">
+                <MapPin className="w-10 h-10 text-blue-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Viator Activities</h3>
+              <p className="text-gray-600">Access thousands of tours and experiences from Viator, bookable directly from your itinerary.</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
+                <svg className="w-10 h-10 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Hotel Booking</h3>
+              <p className="text-gray-600">Find and book the perfect accommodation with competitive prices and verified reviews.</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center">
+                <svg className="w-10 h-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Restaurant Reservations</h3>
+              <p className="text-gray-600">Discover local gems and make reservations at the best restaurants in your destination.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials / Social Proof */}
+      <section className="py-20 lg:py-28 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Loved by travelers worldwide</h2>
+            <p className="text-xl text-gray-500">Join thousands planning smarter trips</p>
+          </div>
+
+          {/* Stats */}
+          <div className="grid md:grid-cols-3 gap-8 mb-16">
+            <div className="text-center">
+              <div className="text-4xl lg:text-5xl font-bold text-primary mb-2">
+                <AnimatedCounter value={50} suffix="K+" />
+              </div>
+              <p className="text-gray-600 font-medium">Happy Travelers</p>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl lg:text-5xl font-bold text-primary mb-2">
+                <AnimatedCounter value={120} suffix="K+" />
+              </div>
+              <p className="text-gray-600 font-medium">Trips Planned</p>
+            </div>
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <span className="text-4xl lg:text-5xl font-bold text-primary">4.9</span>
+                <div className="flex text-amber-400">
+                  {[1,2,3,4,5].map(i => <Star key={i} className="w-6 h-6 fill-current" />)}
+                </div>
+              </div>
+              <p className="text-gray-600 font-medium">Average Rating</p>
+            </div>
+          </div>
+
+          {/* Testimonials */}
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                name: 'Sarah Johnson',
+                location: 'New York, USA',
+                trip: 'Paris & Barcelona',
+                quote: 'TripGenie saved me hours of planning! The AI knew exactly what I wanted and created the perfect itinerary. Every restaurant was amazing.',
+                avatar: '👩🏼‍💼'
+              },
+              {
+                name: 'Marcus Chen',
+                location: 'Singapore',
+                trip: 'Tokyo Adventure',
+                quote: 'I was skeptical about AI planning, but this blew me away. The day-by-day breakdown with bookable activities made everything so easy.',
+                avatar: '👨🏻‍💻'
+              },
+              {
+                name: 'Emma Rodriguez',
+                location: 'Madrid, Spain',
+                trip: 'Bali Getaway',
+                quote: 'Best travel planning tool ever! Found hidden gems I would never have discovered on my own. Highly recommend for solo travelers.',
+                avatar: '👩🏽‍🎨'
+              }
+            ].map((testimonial, i) => (
+              <div key={i} className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg transition-shadow">
+                <div className="flex items-center gap-1 mb-4">
+                  {[1,2,3,4,5].map(j => <Star key={j} className="w-4 h-4 fill-amber-400 text-amber-400" />)}
+                </div>
+                <p className="text-gray-700 mb-6 italic">&ldquo;{testimonial.quote}&rdquo;</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-100 to-amber-100 flex items-center justify-center text-2xl">
+                    {testimonial.avatar}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">{testimonial.name}</p>
+                    <p className="text-sm text-gray-500">{testimonial.location}</p>
+                    <p className="text-xs text-primary mt-0.5">Trip: {testimonial.trip}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Mobile App CTA */}
+      <section className="py-20 lg:py-28 bg-gradient-to-br from-primary-500 via-primary to-primary-600 text-white overflow-hidden relative">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-white rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-white rounded-full blur-3xl"></div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-3xl lg:text-5xl font-bold mb-6">Take your trips on the go</h2>
+              <p className="text-xl text-white/90 mb-8 leading-relaxed">
+                Download the TripGenie mobile app to access your itineraries offline, get real-time updates, and discover new places while you travel.
+              </p>
+              
+              <div className="flex flex-wrap gap-4 mb-8">
+                <a href="#" className="inline-flex items-center gap-3 bg-black hover:bg-gray-900 px-6 py-4 rounded-2xl font-semibold transition-all shadow-lg hover:shadow-xl">
+                  <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+                  </svg>
+                  <div className="text-left">
+                    <div className="text-xs opacity-80">Download on the</div>
+                    <div className="text-lg">App Store</div>
+                  </div>
+                </a>
+                
+                <a href="#" className="inline-flex items-center gap-3 bg-black hover:bg-gray-900 px-6 py-4 rounded-2xl font-semibold transition-all shadow-lg hover:shadow-xl">
+                  <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.6 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.5,12.92 20.16,13.19L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z"/>
+                  </svg>
+                  <div className="text-left">
+                    <div className="text-xs opacity-80">GET IT ON</div>
+                    <div className="text-lg">Google Play</div>
+                  </div>
+                </a>
+              </div>
+
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <Check className="w-5 h-5 text-green-300" />
+                  <span>Offline access</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Check className="w-5 h-5 text-green-300" />
+                  <span>Real-time updates</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Check className="w-5 h-5 text-green-300" />
+                  <span>GPS navigation</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="relative lg:block hidden">
+              <div className="relative w-full max-w-sm mx-auto">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-white/5 rounded-3xl blur-2xl"></div>
+                <div className="relative bg-white/10 backdrop-blur-lg rounded-3xl p-8 border border-white/20">
+                  <div className="bg-white rounded-2xl p-6 shadow-2xl">
+                    <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100">
+                      <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center">
+                        <MapPin className="w-6 h-6 text-primary" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-gray-900">Tokyo</h4>
+                        <p className="text-sm text-gray-500">7-day adventure</p>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      {['Day 1: Arrival & Shibuya', 'Day 2: Traditional Tokyo', 'Day 3: Mount Fuji Day Trip'].map((day, i) => (
+                        <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                          <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center text-sm font-bold">{i+1}</div>
+                          <span className="text-sm text-gray-700">{day}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

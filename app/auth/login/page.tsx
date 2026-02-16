@@ -66,6 +66,16 @@ function LoginContent() {
           {/* Email/Password Form */}
           <EmailPasswordForm mode="signin" redirectTo={redirectTo} />
 
+          {/* Forgot Password Link */}
+          <div className="mt-4 text-center">
+            <Link 
+              href="/auth/forgot-password"
+              className="text-sm text-gray-600 hover:text-primary transition-colors"
+            >
+              Forgot your password?
+            </Link>
+          </div>
+
           {/* Sign Up Link */}
           <p className="mt-6 text-center text-sm text-gray-600">
             Don&apos;t have an account?{' '}

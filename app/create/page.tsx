@@ -48,6 +48,7 @@ export default function CreateTripPage() {
   const [travelerType, setTravelerType] = useState('couple');
   const [selectedVibes, setSelectedVibes] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
 
   const filteredDestinations = searchQuery
     ? destinations.filter(d => 
@@ -71,10 +72,35 @@ export default function CreateTripPage() {
   const handleGenerate = async () => {
     if (!canGenerate) return;
     setIsGenerating(true);
-    // Simulate generation - in real app, this would call the API
-    setTimeout(() => {
-      router.push(`/trip/demo?destination=${encodeURIComponent(destination)}&start=${startDate}&end=${endDate}`);
-    }, 2000);
+    setGenerateError(null);
+    
+    try {
+      const response = await fetch('/api/trips', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          destination,
+          start_date: startDate,
+          end_date: endDate,
+          travelers,
+          preferences: {
+            travelerType,
+            vibes: selectedVibes,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to create trip');
+      }
+
+      const { trip } = await response.json();
+      router.push(`/trips/${trip.id}`);
+    } catch (err) {
+      setGenerateError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+      setIsGenerating(false);
+    }
   };
 
   const getTripDuration = () => {
@@ -124,8 +150,8 @@ export default function CreateTripPage() {
           </div>
 
           {selectedDest && !showDestinations ? (
-            <div className="relative h-48 rounded-xl overflow-hidden group cursor-pointer" onClick={() => setShowDestinations(true)}>
-              <Image src={selectedDest.image} alt={selectedDest.name} fill className="object-cover" />
+            <div role="button" tabIndex={0} aria-label={`Change destination from ${selectedDest.name}`} onKeyDown={(e) => e.key === 'Enter' && setShowDestinations(true)} className="relative h-48 rounded-xl overflow-hidden group cursor-pointer" onClick={() => setShowDestinations(true)}>
+              <Image src={selectedDest.image} alt={`${selectedDest.name}, ${selectedDest.country}`} fill className="object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               <div className="absolute bottom-4 left-4">
                 <p className="text-primary-300 text-sm font-medium uppercase tracking-wide">{selectedDest.country}</p>
@@ -158,10 +184,12 @@ export default function CreateTripPage() {
                 {filteredDestinations.map((dest) => (
                   <button
                     key={dest.id}
+                    aria-label={`Select ${dest.name}, ${dest.country}`}
+                    aria-pressed={destination === dest.name}
                     onClick={() => { setDestination(dest.name); setShowDestinations(false); setSearchQuery(''); }}
                     className={`relative h-32 rounded-xl overflow-hidden group ${destination === dest.name ? 'ring-2 ring-primary ring-offset-2' : ''}`}
                   >
-                    <Image src={dest.image} alt={dest.name} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
+                    <Image src={dest.image} alt={`${dest.name}, ${dest.country}`} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                     <div className="absolute bottom-3 left-3">
                       <p className="text-white font-semibold">{dest.name}</p>
@@ -193,22 +221,26 @@ export default function CreateTripPage() {
 
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Start date</label>
+              <label htmlFor="start-date" className="block text-sm font-medium text-gray-700 mb-2">Start date</label>
               <input
+                id="start-date"
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 min={new Date().toISOString().split('T')[0]}
+                aria-label="Trip start date"
                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">End date</label>
+              <label htmlFor="end-date" className="block text-sm font-medium text-gray-700 mb-2">End date</label>
               <input
+                id="end-date"
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 min={startDate || new Date().toISOString().split('T')[0]}
+                aria-label="Trip end date"
                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
               />
             </div>
@@ -250,14 +282,16 @@ export default function CreateTripPage() {
                   <span className="text-gray-700 font-medium">Travelers</span>
                   <div className="flex items-center gap-4">
                     <button
+                      aria-label="Decrease travelers"
                       onClick={() => setTravelers(Math.max(1, travelers - 1))}
                       disabled={travelers <= 1}
                       className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:border-primary hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       <Minus className="w-4 h-4" />
                     </button>
-                    <span className="text-xl font-semibold text-gray-900 w-8 text-center">{travelers}</span>
+                    <span className="text-xl font-semibold text-gray-900 w-8 text-center" aria-live="polite">{travelers}</span>
                     <button
+                      aria-label="Increase travelers"
                       onClick={() => setTravelers(Math.min(10, travelers + 1))}
                       disabled={travelers >= 10}
                       className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:border-primary hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -338,6 +372,11 @@ export default function CreateTripPage() {
               </>
             )}
           </button>
+          {generateError && (
+            <div className="mt-3 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm text-center" role="alert">
+              {generateError}
+            </div>
+          )}
           <p className="text-center text-sm text-gray-500 mt-3">
             {canGenerate ? 'AI will create a personalized day-by-day plan' : 'Select a destination and dates to continue'}
           </p>

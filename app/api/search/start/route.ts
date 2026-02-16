@@ -7,29 +7,42 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase/server';
 import { start } from 'workflow/api';
 import { planTripWorkflow } from '@/workflows/plan-trip';
+import { checkRateLimit, getClientIp } from '@/lib/security/rate-limit';
+import { z } from 'zod';
 
-interface SearchInput {
-  destination: string;
-  startDate: string;
-  endDate: string;
-  travelers?: number;
-  travelerType?: string;
-  vibes?: string[];
-  budget?: string;
-}
+const SearchInputSchema = z.object({
+  destination: z.string().min(1).max(200).trim(),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  travelers: z.number().int().min(1).max(50).optional(),
+  travelerType: z.string().max(50).optional(),
+  vibes: z.array(z.string().max(50)).max(10).optional(),
+  budget: z.string().max(50).optional(),
+});
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { destination, startDate, endDate, travelers, travelerType, vibes, budget } = body as SearchInput;
-
-    // Validate required fields
-    if (!destination || !startDate || !endDate) {
+    // Rate limit: 5 searches per minute per IP
+    const ip = getClientIp(request);
+    const { allowed } = checkRateLimit(`search:${ip}`, { maxRequests: 5, windowMs: 60_000 });
+    if (!allowed) {
       return NextResponse.json(
-        { error: 'Missing required fields: destination, startDate, endDate' },
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429, headers: { 'Retry-After': '60' } }
+      );
+    }
+
+    const body = await request.json();
+    const parseResult = SearchInputSchema.safeParse(body);
+
+    if (!parseResult.success) {
+      return NextResponse.json(
+        { error: 'Invalid request body', details: parseResult.error.issues },
         { status: 400 }
       );
     }
+
+    const { destination, startDate, endDate, travelers, travelerType, vibes, budget } = parseResult.data;
 
     // Get user ID from auth header if present
     const authHeader = request.headers.get('Authorization');

@@ -1,5 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { z } from 'zod'
+
+const CreateTripSchema = z.object({
+  destination: z.string().min(1).max(200).trim(),
+  start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD'),
+  end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD'),
+  travelers: z.number().int().min(1).max(50).optional(),
+  preferences: z.object({
+    travelerType: z.string().max(50).optional(),
+    vibes: z.array(z.string().max(50)).max(10).optional(),
+    budget: z.string().max(50).optional(),
+    adults: z.number().int().min(1).max(50).optional(),
+    children: z.number().int().min(0).max(50).optional(),
+    interests: z.array(z.string().max(50)).max(20).optional(),
+  }).optional(),
+})
 
 // GET /api/trips - Fetch all trips for the authenticated user
 export async function GET(request: NextRequest) {
@@ -65,15 +81,16 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { destination, start_date, end_date, travelers, preferences } = body
+    const parseResult = CreateTripSchema.safeParse(body)
 
-    // Validate required fields
-    if (!destination || !start_date || !end_date) {
+    if (!parseResult.success) {
       return NextResponse.json(
-        { error: 'Missing required fields: destination, start_date, end_date' },
+        { error: 'Invalid request body', details: parseResult.error.issues },
         { status: 400 }
       )
     }
+
+    const { destination, start_date, end_date, travelers, preferences } = parseResult.data
 
     // Insert trip into database
     const { data: trip, error } = await supabase

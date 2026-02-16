@@ -71,7 +71,11 @@ export async function middleware(request: NextRequest) {
 
   // Redirect authenticated users away from auth routes
   if (isAuthRoute && user) {
-    const redirectTo = request.nextUrl.searchParams.get('redirectTo') || '/dashboard'
+    let redirectTo = request.nextUrl.searchParams.get('redirectTo') || '/dashboard'
+    // Prevent open redirect: only allow relative paths
+    if (!redirectTo.startsWith('/') || redirectTo.startsWith('//') || redirectTo.includes(':')) {
+      redirectTo = '/dashboard'
+    }
     return NextResponse.redirect(new URL(redirectTo, request.url))
   }
 

@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { z } from 'zod'
+
+const UpdateTripSchema = z.object({
+  destination: z.string().min(1).max(200).trim().optional(),
+  start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  travelers: z.number().int().min(1).max(50).optional(),
+  status: z.enum(['draft', 'generating', 'generated', 'failed']).optional(),
+  preferences: z.record(z.unknown()).optional(),
+}).strict()
 
 type Params = {
   params: Promise<{
@@ -14,6 +24,12 @@ export async function GET(
 ) {
   try {
     const { id } = await params
+    
+    // Validate ID format
+    if (!/^[a-zA-Z0-9-]+$/.test(id)) {
+      return NextResponse.json({ error: 'Invalid trip ID' }, { status: 400 })
+    }
+
     const supabase = await createClient()
     
     // Get authenticated user
@@ -71,6 +87,14 @@ export async function PUT(
     }
 
     const body = await request.json()
+    const parseResult = UpdateTripSchema.safeParse(body)
+
+    if (!parseResult.success) {
+      return NextResponse.json(
+        { error: 'Invalid request body', details: parseResult.error.issues },
+        { status: 400 }
+      )
+    }
 
     // TODO: Update trip in database
     // const { data: trip, error } = await supabase

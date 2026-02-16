@@ -11,11 +11,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateItinerary } from '@/lib/ai/client';
 import { TripPreferences } from '@/lib/ai/types';
 import { createClient } from '@/lib/supabase/server';
+import { checkRateLimit, getClientIp } from '@/lib/security/rate-limit';
 
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 10 generations per minute per IP
+    const ip = getClientIp(request);
+    const { allowed, remaining } = checkRateLimit(`itinerary:${ip}`, { maxRequests: 10, windowMs: 60_000 });
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429, headers: { 'Retry-After': '60', 'X-RateLimit-Remaining': String(remaining) } }
+      );
+    }
+
     const body = await request.json();
     const preferences: TripPreferences = {
       destination: body.destination,

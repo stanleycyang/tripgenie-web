@@ -6,7 +6,7 @@ import { Button } from './Button';
 export function Header() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200">
-      <nav className="container mx-auto px-6 py-4 flex items-center justify-between max-w-7xl">
+      <nav aria-label="Main navigation" className="container mx-auto px-6 py-4 flex items-center justify-between max-w-7xl">
         <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
           <div className="relative w-10 h-10">
             <Image
@@ -33,10 +33,10 @@ export function Header() {
         </div>
         
         <div className="flex items-center gap-4">
-          <Link href="/login" className="text-gray-700 hover:text-[#ec7a1c] transition-colors font-medium hidden md:block">
+          <Link href="/auth/login" className="text-gray-700 hover:text-[#ec7a1c] transition-colors font-medium hidden md:block">
             Sign In
           </Link>
-          <Button size="md" onClick={() => window.location.href = '/create-trip'}>
+          <Button size="md" onClick={() => window.location.href = '/create'}>
             Get Started
           </Button>
         </div>
