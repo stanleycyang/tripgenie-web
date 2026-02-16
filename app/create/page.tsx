@@ -49,6 +49,7 @@ export default function CreateTripPage() {
   const [selectedVibes, setSelectedVibes] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [progressMessage, setProgressMessage] = useState('');
 
   const filteredDestinations = searchQuery
     ? destinations.filter(d => 
@@ -73,6 +74,21 @@ export default function CreateTripPage() {
     if (!canGenerate) return;
     setIsGenerating(true);
     setGenerateError(null);
+    setProgressMessage('Analyzing your preferences...');
+    
+    const progressMessages = [
+      'Finding the best spots...',
+      'Crafting your perfect itinerary...',
+      'Adding local recommendations...',
+      'Almost there...',
+    ];
+    let msgIdx = 0;
+    const progressInterval = setInterval(() => {
+      if (msgIdx < progressMessages.length) {
+        setProgressMessage(progressMessages[msgIdx]);
+        msgIdx++;
+      }
+    }, 2500);
     
     try {
       const response = await fetch('/api/trips', {
@@ -96,10 +112,13 @@ export default function CreateTripPage() {
       }
 
       const { trip } = await response.json();
+      clearInterval(progressInterval);
       router.push(`/trips/${trip.id}`);
     } catch (err) {
+      clearInterval(progressInterval);
       setGenerateError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
       setIsGenerating(false);
+      setProgressMessage('');
     }
   };
 
@@ -363,7 +382,7 @@ export default function CreateTripPage() {
             {isGenerating ? (
               <>
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Creating your itinerary...
+                {progressMessage || 'Creating your itinerary...'}
               </>
             ) : (
               <>

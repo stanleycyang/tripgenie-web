@@ -23,14 +23,17 @@ export function Header() {
         </Link>
         
         <div className="hidden md:flex items-center gap-8">
-          <Link href="#features" className="text-gray-700 hover:text-[#ec7a1c] transition-colors font-medium">
+          <Link href="#features" className="text-gray-700 hover:text-primary transition-colors font-medium">
             Features
           </Link>
-          <Link href="#destinations" className="text-gray-700 hover:text-[#ec7a1c] transition-colors font-medium">
+          <Link href="#destinations" className="text-gray-700 hover:text-primary transition-colors font-medium">
             Destinations
           </Link>
-          <Link href="#how-it-works" className="text-gray-700 hover:text-[#ec7a1c] transition-colors font-medium">
+          <Link href="#how-it-works" className="text-gray-700 hover:text-primary transition-colors font-medium">
             How It Works
+          </Link>
+          <Link href="https://apps.apple.com/app/tripgenie" className="text-primary hover:text-primary-600 transition-colors font-medium flex items-center gap-1">
+            📱 Get the App
           </Link>
         </div>
         
